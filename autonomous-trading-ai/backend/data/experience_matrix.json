@@ -1,0 +1,76 @@
+{
+  "M5_FVG_LIMIT": {
+    "total_attempts": 16,
+    "successful_trades": 13,
+    "failed_trades": 3,
+    "confidence_score": 0.812,
+    "winning_signatures": [
+      "[#387686208] Place Sell Limit orders at the 50% equilibrium of an M5 Bearish FVG with a strict 20-minute TTL, setting the Stop Loss just above the FVG high to capture rapid micro-structure order flow rejections.",
+      "[#387690625] Execute limit orders at 50% FVG equilibrium during London/NY window with confirmed sweep rejection.",
+      "[#387668169] Execute Sell Limits exclusively at the 50% equilibrium of M5 Bearish FVGs during high-volume sessions, placing the Stop Loss strictly above the FVG invalidation level to maintain a highly asymmetric risk-to-reward ratio.",
+      "[#387659359] Execute short limit orders at the exact 50% equilibrium of an M5 Bearish FVG during high-volume sessions, setting a tight stop-loss just above the FVG high and targeting the immediate sell-side liquidity pool.",
+      "[#387643855] Place limit orders at the exact 50% equilibrium of an M5 Fair Value Gap with a tight stop loss placed just beyond the gap's invalidation level, targeting the opposing liquidity pool for a rapid, high-probability scalp."
+    ],
+    "failure_anti_patterns": [
+      "Entering M5 FVG during low-volume Asian consolidation without displacement.",
+      "Front-running an unconfirmed sweep directly into higher-timeframe order block supply."
+    ],
+    "last_updated": "2026-10-05T13:33:33.390711+00:00"
+  },
+  "M1_SWEEP_RETEST": {
+    "total_attempts": 8,
+    "successful_trades": 5,
+    "failed_trades": 3,
+    "confidence_score": 0.625,
+    "winning_signatures": [
+      "Session high/low sweep followed by immediate 1m rejection pinbar and displacement back inside the range."
+    ],
+    "failure_anti_patterns": [
+      "Chasing momentum after candle has already closed far past the sweep wick extreme.",
+      "Trading into flash spread blowout (> 40 points) on rapid intraday spikes."
+    ],
+    "last_updated": "2026-10-02T15:39:10.777581+00:00"
+  },
+  "H1_PULLBACK_LIMIT": {
+    "total_attempts": 63,
+    "successful_trades": 44,
+    "failed_trades": 19,
+    "confidence_score": 0.698,
+    "winning_signatures": [
+      "[#387694197] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
+      "[#387694187] Scale-in short positions only when the H4 structural flow is bearish, executing secondary entries at the 30m premium mitigation block with a hard stop protected by the H1 swing high.",
+      "[#387694178] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
+      "[#387694170] Execute scale-in short entries upon confirmed lower-timeframe rejection within an established HTF supply block to optimize risk-to-reward and capture sustained structural expansion.",
+      "[#387694152] Execute scale-in sell limits at the 50% equilibrium of the H1 Fair Value Gap (FVG) only when aligned with the H4 bearish structural flow, maintaining a tight invalidation level above the swing high."
+    ],
+    "failure_anti_patterns": [
+      "[#387496187] Never scale into an existing contrarian position during high-timeframe structural expansion without a confirmed lower-timeframe market structure shift and liquidity sweep.",
+      "[#387496137] Avoid scaling into an existing position on lower-timeframe (M30) structural signals without a confirmed Change of Character (CHoCH) or a clear sweep of the internal range liquidity on the higher-timeframe (H1/H4) trend.",
+      "[#387495786] Do not scale into an institutional short position during an active H4/H1 expansion phase until a clear liquidity sweep of the major swing high has occurred and a sub-interval market structure shift is confirmed.",
+      "[#387495644] Never scale into an existing structural thesis using mid-range limit orders or unconfirmed mitigations; scale-ins must require a completed liquidity sweep and a confirmed lower-timeframe market structure shift to avoid compounding losses at the invalidation level.",
+      "[#387495566] Avoid scaling into short positions during an active H4/H1 bullish expansion until a clear HTF liquidity sweep and LTF structural break are confirmed. Do not mistake minor internal range pauses for institutional distribution."
+    ],
+    "last_updated": "2026-10-05T14:23:50.043881+00:00"
+  },
+  "SWING_M30_BOS_LIMIT": {
+    "total_attempts": 12,
+    "successful_trades": 9,
+    "failed_trades": 3,
+    "confidence_score": 0.75,
+    "winning_signatures": [
+      "Clear M30 Break of Structure in direction of D1/H4 flow, Alpha Vantage 10Y Yield check passed."
+    ],
+    "failure_anti_patterns": [
+      "Entering swing buy when 10Y Treasury Yield is accelerating upward with Bullish DXY."
+    ],
+    "last_updated": "2026-10-02T15:39:10.777581+00:00"
+  },
+  "LOW_CONF_TEST": {
+    "total_attempts": 10,
+    "successful_trades": 4,
+    "failed_trades": 6,
+    "confidence_score": 0.4,
+    "winning_signatures": [],
+    "failure_anti_patterns": []
+  }
+}

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous Trading AI - Live Agent Workflow & Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #07090e;
+      --bg-card: rgba(15, 20, 32, 0.8);
+      --bg-card-hover: rgba(22, 30, 48, 0.9);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(59, 130, 246, 0.35);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-gold: #f59e0b;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --pass-green: #10b981;
+      --fail-red: #ef4444;
+      --warning-amber: #f97316;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 24px;
+      background-image: 
+        radial-gradient(circle at 10% 15%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 85%, rgba(245, 158, 11, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+    }
+
+    .container { max-width: 1480px; margin: 0 auto; }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+
+    .header-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--pass-green);
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; background: var(--pass-green); border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .btn-danger:hover { background: #ef4444; color: #fff; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+
+    /* Navigation Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.04); }
+    .tab-btn.active {
+      color: var(--text-main);
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .tab-pill {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Stat Cards Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--border-accent), transparent);
+    }
+    .metric-label { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; margin-bottom: 6px; }
+    .metric-val { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .metric-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+    /* Visual Workflow Pipeline Banner */
+    .pipeline-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .pipeline-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pipeline-steps {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 980px;
+    }
+    .pipe-step {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      position: relative;
+    }
+    .pipe-step.highlight {
+      border-color: rgba(59, 130, 246, 0.4);
+      background: rgba(59, 130, 246, 0.08);
+    }
+    .pipe-num {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent-gold);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .pipe-name { font-size: 13px; font-weight: 700; margin: 4px 0 2px 0; color: var(--text-main); }
+    .pipe-desc { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+    .pipe-arrow { color: var(--text-muted); font-size: 18px; font-weight: 700; }
+
+    /* Agents Mind Grid */
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .agent-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .agent-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .agent-title-box { display: flex; flex-direction: column; gap: 2px; }
+    .agent-role { font-size: 15px; font-weight: 700; color: var(--text-main); }
+    .agent-sub { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+    .agent-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--text-muted); }
+    .info-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--text-main); }
+
+    /* Memory / Anti-Patterns Box */
+    .anti-pattern-box {
+      margin-top: 14px;
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11px;
+    }
+    .anti-pattern-title {
+      font-weight: 700;
+      color: #f87171;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .anti-pattern-item {
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(239, 68, 68, 0.2);
+      color: #cbd5e1;
+    }
+    .anti-pattern-item:last-child { border-bottom: none; }
+
+    /* Debounce & Cooldown Tags */
+    .cooldown-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .cooldown-active { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .cooldown-ready { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    /* Tables */
+    .table-container {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 12px 18px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 13px 18px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-card-hover); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+    .badge-buy { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-sell { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-pass { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-fail { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-breakeven { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-open { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    .tech-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      color: #cbd5e1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Progress bar */
+    .progress-bar-bg {
+      height: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* Tab Content display control */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .empty-state {
+      padding: 36px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .pnl-pos { color: var(--pass-green); font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .pnl-neg { color: var(--fail-red); font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <span class="brand-badge">SMC INSTITUTIONAL</span>
+        <h1>XAUUSD Autonomous Trading AI</h1>
+      </div>
+      <div class="header-controls">
+        <div class="status-badge">
+          <div class="pulse-dot"></div>
+          <span id="sentry-status">Sentry & Debounce Active</span>
+        </div>
+        <button class="btn btn-secondary" onclick="fetchLiveTelemetry()">Refresh Data</button>
+        <button class="btn btn-danger" onclick="emergencyCloseAll()">Close All Positions</button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('workflow')">
+        🤖 Live Agent Workflow & Decision Pipeline
+        <span class="tab-pill" id="workflow-pill">Live</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('positions')">
+        ⚡ Active Positions & Danger Sentry
+        <span class="tab-pill" id="positions-pill">0</span>
+      </button>
+      <button class="tab-btn" onclick="switchTab('journal')">
+        📓 Institutional Trade Journal & AI Post-Mortem
+        <span class="tab-pill" id="journal-pill">History</span>
+      </button>
+    </div>
+
+    <!-- Key Metrics Grid (Always Visible) -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Account Equity</div>
+        <div class="metric-val" id="val-equity">$0.00</div>
+        <div class="metric-sub" id="val-balance">Balance: $0.00</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Gold Price (XAUUSD)</div>
+        <div class="metric-val" id="val-gold-price">0.00</div>
+        <div class="metric-sub" id="val-gold-spread">Spread: 0.0 pts</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Win Rate & Trades</div>
+        <div class="metric-val" id="val-win-rate">0.0%</div>
+        <div class="metric-sub" id="val-trade-counts">0 Passed / 0 Failed</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Total Realized PnL</div>
+        <div class="metric-val" id="val-realized-pnl">$0.00</div>
+        <div class="metric-sub" id="val-open-count">Active Positions: 0</div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: LIVE AGENT WORKFLOW & DECISION PIPELINE -->
+    <!-- ========================================== -->
+    <div id="tab-workflow" class="tab-content active">
+      <!-- Visual Pipeline Banner -->
+      <div class="pipeline-wrapper">
+        <div class="pipeline-title">
+          <span>Autonomous Multi-Agent Decision Pipeline</span>
+          <span style="font-size: 11px; color: var(--pass-green);">● Real-Time Closed-Loop Learning</span>
+        </div>
+        <div class="pipeline-steps">
+          <div class="pipe-step highlight">
+            <div class="pipe-num">Step 1</div>
+            <div class="pipe-name">Macro Director</div>
+            <div class="pipe-desc">US 10Y Yield & DXY cache (30m refresh)</div>
+          </div>
+          <div class="pipe-arrow">➔</div>
+          <div class="pipe-step highlight">
+            <div class="pipe-num">Step 2</div>
+            <div class="pipe-name">Dual Traders</div>
+            <div class="pipe-desc">Swing (1001) & Scalp (2002) scanning</div>
+          </div>
+          <div class="pipe-arrow">➔</div>
+          <div class="pipe-step highlight">
+            <div class="pipe-num">Step 3</div>
+            <div class="pipe-name">Post-Mortem Memory</div>
+            <div class="pipe-desc">Self-check vs last 3 failed trade lessons</div>
+          </div>
+          <div class="pipe-arrow">➔</div>
+          <div class="pipe-step highlight">
+            <div class="pipe-num">Step 4</div>
+            <div class="pipe-name">Risk Arbiter</div>
+            <div class="pipe-desc">$3 Debounce (20m) & 20% margin guard</div>
+          </div>
+          <div class="pipe-arrow">➔</div>
+          <div class="pipe-step highlight">
+            <div class="pipe-num">Step 5</div>
+            <div class="pipe-name">Danger Sentry</div>
+            <div class="pipe-desc">180s Grace, M5 Exhaustion & 1:1 BE lock</div>
+          </div>
+          <div class="pipe-arrow">➔</div>
+          <div class="pipe-step highlight">
+            <div class="pipe-num">Step 6</div>
+            <div class="pipe-name">Post-Mortem AI</div>
+            <div class="pipe-desc">Gemini diagnosis feeds memory loop</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Minds Status Cards Grid -->
+      <div class="agents-grid">
+        <!-- Card 1: Macro Director -->
+        <div class="agent-card">
+          <div>
+            <div class="agent-header">
+              <div class="agent-title-box">
+                <span class="agent-role">Macro Director & 10Y Yield</span>
+                <span class="agent-sub">Exogenous Macro Sentinel</span>
+              </div>
+              <span class="agent-badge" id="macro-regime-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">NEUTRAL</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">US 10-Year Treasury Yield</span>
+              <span class="info-val" id="macro-yield">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">US Dollar Index (DXY)</span>
+              <span class="info-val" id="macro-dxy">--</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Long / Short Permissions</span>
+              <span class="info-val" id="macro-permissions">Long: Allowed | Short: Allowed</span>
+            </div>
+          </div>
+          <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted);">
+            Data Source: Alpha Vantage Worker (Cache duration: 30m safe)
+          </div>
+        </div>
+
+        <!-- Card 2: Swing Trader (1001) -->
+        <div class="agent-card">
+          <div>
+            <div class="agent-header">
+              <div class="agent-title-box">
+                <span class="agent-role">Swing Trader ("Institutional")</span>
+                <span class="agent-sub">Magic: 1001 • H4/H1/M30 Stack</span>
+              </div>
+              <span class="agent-badge" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">1.5% Risk</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Timeframe Stack</span>
+              <span class="info-val">D1 Trend • H1 Zones • M30 BOS</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Pyramiding Scale-In</span>
+              <span class="info-val">Active at 1:1 R:R + BE Lock</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Post-Mortem Memory Filter</span>
+              <span class="info-val" id="swing-memory-count">0 Anti-Patterns Loaded</span>
+            </div>
+          </div>
+          <div class="anti-pattern-box" id="swing-anti-pattern-box">
+            <div class="anti-pattern-title">⚠️ SWING RECENT FAILURE LESSONS (ANTI-PATTERNS)</div>
+            <div id="swing-anti-pattern-list">No recent swing failures. System operating normally.</div>
+          </div>
+        </div>
+
+        <!-- Card 3: Scalp Trader (2002) -->
+        <div class="agent-card">
+          <div>
+            <div class="agent-header">
+              <div class="agent-title-box">
+                <span class="agent-role">Scalp Trader ("Liquid Sniper")</span>
+                <span class="agent-sub">Magic: 2002 • M5/M1 Micro</span>
+              </div>
+              <span class="agent-badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">0.50% Risk</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Session Volatility Filter</span>
+              <span class="info-val" id="scalp-session-text">London / NY (07:00-17:00 UTC)</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">15-Min Exit Cooldown</span>
+              <span id="scalp-cooldown-badge" class="cooldown-pill cooldown-ready">Ready (0.0m)</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Post-Mortem Memory Filter</span>
+              <span class="info-val" id="scalp-memory-count">0 Anti-Patterns Loaded</span>
+            </div>
+          </div>
+          <div class="anti-pattern-box" id="scalp-anti-pattern-box">
+            <div class="anti-pattern-title">⚠️ SCALP RECENT FAILURE LESSONS (ANTI-PATTERNS)</div>
+            <div id="scalp-anti-pattern-list">No recent scalp failures. System operating normally.</div>
+          </div>
+        </div>
+
+        <!-- Card 4: Chief Risk Arbiter & Debounce -->
+        <div class="agent-card">
+          <div>
+            <div class="agent-header">
+              <div class="agent-title-box">
+                <span class="agent-role">Chief Risk Arbiter (The Gatekeeper)</span>
+                <span class="agent-sub">Capital Tier & Shared Margin Guard</span>
+              </div>
+              <span class="agent-badge" id="arbiter-tier-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">TIER 4</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Shared Margin Utilization</span>
+              <span class="info-val" id="margin-util-text">0.0% / 20.0% Max</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="margin-util-fill" style="width: 5%; background-color: #10b981;"></div>
+            </div>
+            <div class="info-row" style="margin-top: 10px;">
+              <span class="info-label">Setup Debounce Blacklist ($3.00)</span>
+              <span class="info-val" id="debounce-count">0 Active Zones</span>
+            </div>
+          </div>
+          <div id="debounce-zones-list" style="margin-top: 10px; font-size: 11px; color: var(--text-muted);">
+            No active $3.00 blacklist zones. Market clean for new entries.
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Agent Decision Stream -->
+      <div class="table-container">
+        <div style="padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--text-muted); display: flex; justify-content: space-between;">
+          <span>LIVE AGENT DECISION STREAM (ARBITER AUDIT TRAIL)</span>
+          <span>Last 12 Decisions</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Strategy Mind</th>
+              <th>Direction</th>
+              <th>Confidence</th>
+              <th>Decision / Status</th>
+              <th>Thesis & Gating Rationale</th>
+            </tr>
+          </thead>
+          <tbody id="decision-tbody">
+            <tr><td colspan="6" class="empty-state">No recent decisions logged yet. Agents are actively scanning.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: ACTIVE POSITIONS & DANGER SENTRY -->
+    <!-- ========================================== -->
+    <div id="tab-positions" class="tab-content">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket & Role</th>
+              <th>Side</th>
+              <th>Volume</th>
+              <th>Entry Price</th>
+              <th>Current Price</th>
+              <th>Floating PnL</th>
+              <th>Stop Loss</th>
+              <th>Take Profit</th>
+              <th>180s Grace Period</th>
+              <th>Danger Sentry Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="positions-tbody">
+            <tr><td colspan="11" class="empty-state">No open positions. Dual-Trader minds scouting high-confluence setups.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: INSTITUTIONAL TRADE JOURNAL -->
+    <!-- ========================================== -->
+    <div id="tab-journal" class="tab-content">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>When (Opened / Closed)</th>
+              <th>Technique & Magic</th>
+              <th>Reason & Confluences</th>
+              <th>Lot Size</th>
+              <th>Outcome (Pass/Fail)</th>
+              <th>Realized PnL</th>
+              <th>AI Post-Mortem & Diagnosis</th>
+            </tr>
+          </thead>
+          <tbody id="journal-tbody">
+            <tr><td colspan="7" class="empty-state">Loading trade journal...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 'workflow';
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      if (tabId === 'workflow') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('tab-workflow').classList.add('active');
+      } else if (tabId === 'positions') {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('tab-positions').classList.add('active');
+      } else if (tabId === 'journal') {
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        document.getElementById('tab-journal').classList.add('active');
+      }
+    }
+
+    async function fetchLiveTelemetry() {
+      try {
+        const [resStatus, resJournal, resWorkflow] = await Promise.all([
+          fetch('/api/dashboard/status'),
+          fetch('/api/dashboard/journal'),
+          fetch('/api/dashboard/workflow')
+        ]);
+        const status = await resStatus.json();
+        const journal = await resJournal.json();
+        const workflow = await resWorkflow.json();
+
+        renderMetrics(status);
+        renderPositions(status.active_positions);
+        renderJournal(journal);
+        renderWorkflow(workflow);
+      } catch (err) {
+        console.error("Telemetry fetch error:", err);
+      }
+    }
+
+    function renderMetrics(data) {
+      document.getElementById('val-equity').innerText = `$${data.account.equity.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      document.getElementById('val-balance').innerText = `Balance: $${data.account.balance.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+      document.getElementById('val-gold-price').innerText = data.gold_ticker.bid ? data.gold_ticker.bid.toFixed(2) : '--';
+      document.getElementById('val-gold-spread').innerText = `Spread: ${data.gold_ticker.spread_points} pts (${data.gold_ticker.spread_safe ? 'Safe' : 'High'})`;
+      
+      document.getElementById('val-win-rate').innerText = `${data.performance.win_rate_pct}%`;
+      document.getElementById('val-trade-counts').innerText = `${data.performance.passes} Passed / ${data.performance.fails} Failed`;
+
+      const pnl = data.performance.total_realized_pnl;
+      const pnlEl = document.getElementById('val-realized-pnl');
+      pnlEl.innerText = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+      pnlEl.className = `metric-val ${pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}`;
+
+      document.getElementById('val-open-count').innerText = `Active Positions: ${data.performance.active_positions_count}`;
+      document.getElementById('positions-pill').innerText = `${data.performance.active_positions_count}`;
+    }
+
+    function renderWorkflow(wf) {
+      if (!wf) return;
+
+      // 1. Macro Director
+      const macro = wf.macro_director;
+      const macroBadge = document.getElementById('macro-regime-badge');
+      macroBadge.innerText = macro.regime;
+      if (macro.regime.includes('BULL')) macroBadge.style.color = '#34d399';
+      else if (macro.regime.includes('BEAR')) macroBadge.style.color = '#f87171';
+      else macroBadge.style.color = '#60a5fa';
+
+      document.getElementById('macro-yield').innerText = `${macro.yield_10y}%`;
+      document.getElementById('macro-dxy').innerText = macro.dxy;
+      document.getElementById('macro-permissions').innerText = `Long: ${macro.allow_long ? 'Allowed' : 'Blocked'} | Short: ${macro.allow_short ? 'Allowed' : 'Blocked'}`;
+
+      // 2. Swing Trader
+      const swing = wf.swing_trader;
+      document.getElementById('swing-memory-count').innerText = `${swing.anti_patterns_loaded} Anti-Patterns Loaded`;
+      const swingList = document.getElementById('swing-anti-pattern-list');
+      if (swing.recent_anti_patterns && swing.recent_anti_patterns.length > 0) {
+        swingList.innerHTML = swing.recent_anti_patterns.map(p => `
+          <div class="anti-pattern-item">
+            <strong>#${p.ticket} (${p.side} -$${p.loss}):</strong> ${p.lesson}
+          </div>
+        `).join('');
+      } else {
+        swingList.innerText = "No recent swing failures. Operating with clean memory.";
+      }
+
+      // 3. Scalp Trader
+      const scalp = wf.scalp_trader;
+      document.getElementById('scalp-session-text').innerText = scalp.session_window_text;
+      const cdBadge = document.getElementById('scalp-cooldown-badge');
+      if (scalp.is_cooling_down) {
+        cdBadge.className = 'cooldown-pill cooldown-active';
+        cdBadge.innerText = `Cooldown (${scalp.cooldown_remaining_min}m left)`;
+      } else {
+        cdBadge.className = 'cooldown-pill cooldown-ready';
+        cdBadge.innerText = `Scanning Active (Ready)`;
+      }
+
+      document.getElementById('scalp-memory-count').innerText = `${scalp.anti_patterns_loaded} Anti-Patterns Loaded`;
+      const scalpList = document.getElementById('scalp-anti-pattern-list');
+      if (scalp.recent_anti_patterns && scalp.recent_anti_patterns.length > 0) {
+        scalpList.innerHTML = scalp.recent_anti_patterns.map(p => `
+          <div class="anti-pattern-item">
+            <strong>#${p.ticket} (${p.side} -$${p.loss}):</strong> ${p.lesson}
+          </div>
+        `).join('');
+      } else {
+        scalpList.innerText = "No recent scalp failures. Operating with clean memory.";
+      }
+
+      // 4. Arbiter & Debounce
+      const arbiter = wf.arbiter;
+      document.getElementById('arbiter-tier-badge').innerText = arbiter.tier_name;
+      document.getElementById('margin-util-text').innerText = `${arbiter.margin_util_pct}% / 20.0% Max`;
+      const marginFill = document.getElementById('margin-util-fill');
+      const fillWidth = Math.min(100, (arbiter.margin_util_pct / 20.0) * 100);
+      marginFill.style.width = `${fillWidth}%`;
+      marginFill.style.backgroundColor = arbiter.margin_guard_ok ? '#10b981' : '#ef4444';
+
+      document.getElementById('debounce-count').innerText = `${arbiter.active_blacklist_zones.length} Active Zones`;
+      const debDiv = document.getElementById('debounce-zones-list');
+      if (arbiter.active_blacklist_zones.length > 0) {
+        debDiv.innerHTML = arbiter.active_blacklist_zones.map(z => `
+          <div style="background: rgba(245, 158, 11, 0.08); border-left: 2px solid #f59e0b; padding: 4px 8px; margin-top: 4px; border-radius: 4px;">
+            <strong style="color: #fbbf24;">${z.direction} Zone:</strong> ${z.zone_range} (${z.remaining_minutes}m left)
+          </div>
+        `).join('');
+      } else {
+        debDiv.innerText = "No active $3.00 blacklist zones. Price territory clear.";
+      }
+
+      // 5. Decision Stream
+      const dBody = document.getElementById('decision-tbody');
+      if (wf.decision_stream && wf.decision_stream.length > 0) {
+        dBody.innerHTML = wf.decision_stream.map(d => {
+          let badgeClass = 'badge-open';
+          if (d.status === 'APPROVED') badgeClass = 'badge-approved';
+          else if (d.status.includes('REJECTED')) badgeClass = 'badge-rejected';
+
+          return `
+            <tr>
+              <td><span class="tech-pill">${d.timestamp}</span></td>
+              <td><strong>${d.strategy}</strong></td>
+              <td><span class="badge ${d.direction === 'BUY' ? 'badge-buy' : 'badge-sell'}">${d.direction}</span></td>
+              <td>${d.confidence}</td>
+              <td><span class="badge ${badgeClass}">${d.status}</span></td>
+              <td style="font-size: 12px; color: var(--text-muted); max-width: 480px; line-height: 1.4;">
+                <div><strong style="color: #cbd5e1">${d.thesis}</strong></div>
+                <div style="font-size: 11px; margin-top: 2px;">${d.notes || ''}</div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        dBody.innerHTML = `<tr><td colspan="6" class="empty-state">No decisions logged yet. Real-time scanning in progress.</td></tr>`;
+      }
+    }
+
+    function renderPositions(positions) {
+      const tbody = document.getElementById('positions-tbody');
+      if (!positions || positions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="empty-state">No open positions. Sentry is scanning for high-confluence SMC setups.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = positions.map(p => {
+        const pnlClass = p.unrealized_pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+        const sideBadge = p.side === 'BUY' ? 'badge-buy' : 'badge-sell';
+        
+        let graceHtml = '';
+        if (p.in_grace_period) {
+          graceHtml = `
+            <div style="color: #fbbf24; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+              ⏱️ Grace: ${p.grace_remaining_sec}s
+            </div>
+            <div class="progress-bar-bg" style="width: 90px;">
+              <div class="progress-bar-fill" style="width: ${((180 - p.grace_remaining_sec)/180)*100}%; background-color: #f59e0b;"></div>
+            </div>
+          `;
+        } else {
+          graceHtml = `<span style="color: #10b981; font-size: 11px;">M5 Exhaustion Active</span>`;
+        }
+
+        return `
+          <tr>
+            <td>
+              <span class="tech-pill">#${p.ticket}</span>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${p.role || 'MAGIC ' + p.magic}</div>
+            </td>
+            <td><span class="badge ${sideBadge}">${p.side}</span></td>
+            <td><strong>${p.lot_size.toFixed(2)}</strong> lots</td>
+            <td>${p.entry_price.toFixed(2)}</td>
+            <td><strong>${p.current_price.toFixed(2)}</strong></td>
+            <td class="${pnlClass}">${p.unrealized_pnl >= 0 ? '+' : ''}$${p.unrealized_pnl.toFixed(2)}</td>
+            <td>${p.stop_loss ? p.stop_loss.toFixed(2) : '--'}</td>
+            <td>${p.take_profit ? p.take_profit.toFixed(2) : '--'}</td>
+            <td>${graceHtml}</td>
+            <td>
+              <span class="badge ${p.danger_pct >= 80 ? 'badge-fail' : (p.danger_pct >= 50 ? 'badge-breakeven' : 'badge-pass')}">
+                ${p.danger_level} (${p.danger_pct}%)
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="closePosition(${p.ticket})">Emergency Close</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderJournal(trades) {
+      const tbody = document.getElementById('journal-tbody');
+      if (!trades || trades.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No trade history recorded yet. New executions will be automatically logged here.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = trades.map(t => {
+        let statusBadge = 'badge-open';
+        if (t.status === 'PASS') statusBadge = 'badge-pass';
+        else if (t.status === 'FAIL') statusBadge = 'badge-fail';
+        else if (t.status === 'BREAKEVEN') statusBadge = 'badge-breakeven';
+
+        const pnlClass = t.realized_pnl >= 0 ? 'pnl-pos' : 'pnl-neg';
+
+        let postMortemHtml = '';
+        if (t.status === 'FAIL' || t.why_it_went_wrong) {
+          postMortemHtml = `
+            <div style="background: rgba(239, 68, 68, 0.06); border-left: 3px solid #ef4444; padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: 12px; line-height: 1.4;">
+              <div style="font-weight: 700; color: #f87171;">⚠️ AI POST-MORTEM DIAGNOSIS</div>
+              <div>${t.why_it_went_wrong || 'Structural invalidation breached.'}</div>
+              ${t.lessons_learned ? `<div style="font-weight: 700; color: #fbbf24; margin-top: 4px;">💡 Lesson Learned:</div><div style="color: #cbd5e1">${t.lessons_learned}</div>` : ''}
+              ${t.danger_trigger ? `<div style="margin-top: 4px; color: #f87171; font-size: 11px;">Trigger: ${t.danger_trigger}</div>` : ''}
+            </div>
+          `;
+        } else if (t.status === 'PASS') {
+          postMortemHtml = `<span style="color: #10b981; font-size: 12px;">✅ Trade hit target cleanly. SMC thesis respected.</span>`;
+        } else {
+          postMortemHtml = `<span style="color: #60a5fa; font-size: 12px;">Position active. Real-time danger sentry monitoring.</span>`;
+        }
+
+        return `
+          <tr>
+            <td>
+              <div><strong>${t.opened_at}</strong></div>
+              <div style="font-size: 11px; color: var(--text-muted)">${t.closed_at ? 'Closed: ' + t.closed_at : 'Active Now'}</div>
+            </td>
+            <td><span class="tech-pill">${t.technique_used}</span></td>
+            <td style="max-width: 320px; font-size: 12px; line-height: 1.4;">
+              <div>${t.reason}</div>
+              ${t.invalidation_condition ? `<div style="color: #94a3b8; font-size: 11px; margin-top: 2px;">Invalidation: ${t.invalidation_condition}</div>` : ''}
+            </td>
+            <td><strong>${t.lot_size.toFixed(2)}</strong> lots</td>
+            <td><span class="badge ${statusBadge}">${t.status}</span></td>
+            <td class="${pnlClass}">${t.realized_pnl >= 0 ? '+' : ''}$${t.realized_pnl.toFixed(2)}</td>
+            <td style="min-width: 300px;">${postMortemHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function closePosition(ticket) {
+      if (!confirm(`Are you sure you want to emergency close position #${ticket}?`)) return;
+      try {
+        const res = await fetch(`/api/dashboard/close-position/${ticket}`, { method: 'POST' });
+        const data = await res.json();
+        alert(data.message || 'Closed position.');
+        fetchLiveTelemetry();
+      } catch (e) {
+        alert("Error closing position: " + e);
+      }
+    }
+
+    async function emergencyCloseAll() {
+      if (!confirm("Are you sure you want to emergency close ALL open positions?")) return;
+      try {
+        const res = await fetch('/api/dashboard/close-all', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message || 'Closed all positions.');
+        fetchLiveTelemetry();
+      } catch (e) {
+        alert("Error closing positions: " + e);
+      }
+    }
+
+    // Initial fetch and auto-refresh every 2.5 seconds
+    fetchLiveTelemetry();
+    setInterval(fetchLiveTelemetry, 2500);
+  </script>
+</body>
+</html>

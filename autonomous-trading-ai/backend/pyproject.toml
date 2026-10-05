@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autonomous-trading-ai-backend"
+version = "0.1.0"
+description = "Backend for Autonomous Trading Platform"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "SQLAlchemy",
+    "alembic",
+    "psycopg2-binary",
+    "redis",
+    "pandas",
+]
+
+[tool.pytest.ini_options]
+addopts = "-v --tb=short"
+testpaths = ["tests"]
