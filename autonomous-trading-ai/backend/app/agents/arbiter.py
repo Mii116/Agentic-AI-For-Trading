@@ -9,6 +9,7 @@ from app.agents.trade_proposal import TradeProposal
 from app.risk.capital_manager import CapitalManager, AccountTier
 from app.risk.market_filters import MarketFilters
 from app.risk.stop_policy import enforce_min_stop, MIN_STOP_DISTANCE
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -241,8 +242,8 @@ class ChiefRiskArbiter:
                 same_dir_positions = [p for p in same_magic_positions if p.type == target_type]
                 opp_dir_positions = [p for p in same_magic_positions if p.type == opposite_type]
 
-                # Check 1: Avoid stacked duplicate entries within $2.00 for SAME magic number (unless scale-in)
-                if same_dir_positions and not candidate.is_scale_in:
+                # Check 1: Avoid stacked duplicate entries within $2.00 for SAME magic number (unless scale-in or cent mode)
+                if same_dir_positions and not candidate.is_scale_in and not getattr(settings, "CENT_ACCOUNT_MODE", False):
                     last_entry = same_dir_positions[-1].price_open
                     if abs(candidate.entry_price - last_entry) < 2.0:
                         logger.info(
@@ -360,8 +361,13 @@ class ChiefRiskArbiter:
                 continue
 
             # Route 2: Scale-In or Standard Limit / Market Orders
+            is_cent_mode = getattr(settings, "CENT_ACCOUNT_MODE", False)
+            max_cent_tranches = getattr(settings, "CENT_MAX_TRANCHES", 5)
+
             if proposal.is_scale_in:
                 comment = f"ScaleIn #{proposal.parent_ticket or ''}"[:31]
+            elif is_cent_mode:
+                comment = f"CentTranche1-{proposal.proposal_id[:6]}"[:31]
             elif order_type == "LIMIT":
                 comment = f"LMT-{cluster[:12]}-{proposal.proposal_id[:6]}"[:31]
             elif proposal.magic_number == 1001:
@@ -381,6 +387,26 @@ class ChiefRiskArbiter:
                     proposal=proposal,
                     ttl_minutes=getattr(proposal, "ttl_minutes", 20)
                 )
+
+                # Deploy second staggered tranche in Cent Account mode if capacity permits
+                if success and is_cent_mode and not proposal.is_scale_in:
+                    all_pos_count = len(mt5.positions_get(symbol=symbol) or [])
+                    if all_pos_count < max_cent_tranches:
+                        stagger = 0.30 if proposal.direction == "BUY" else -0.30
+                        staggered_entry = round(proposal.entry_price - stagger, 2)
+                        tranche2_comment = f"CentTranche2-{proposal.proposal_id[:6]}"[:31]
+                        logger.info(f"[CentPyramidEngine] Deploying Tranche 2 Limit at {staggered_entry:.2f} ({lot_size} lots)")
+                        self.execution_engine.execute_custom_limit_order(
+                            symbol=symbol,
+                            side=proposal.direction,
+                            limit_price=staggered_entry,
+                            volume=lot_size,
+                            stop_loss=proposal.structural_sl,
+                            take_profit=proposal.suggested_tp,
+                            comment=tranche2_comment,
+                            proposal=proposal,
+                            ttl_minutes=getattr(proposal, "ttl_minutes", 20)
+                        )
             else:
                 success = self.execution_engine.execute_custom_order(
                     symbol=symbol,
@@ -391,6 +417,22 @@ class ChiefRiskArbiter:
                     comment=comment,
                     proposal=proposal
                 )
+
+                # Deploy second concurrent tranche in Cent Account mode if capacity permits
+                if success and is_cent_mode and not proposal.is_scale_in:
+                    all_pos_count = len(mt5.positions_get(symbol=symbol) or [])
+                    if all_pos_count < max_cent_tranches:
+                        tranche2_comment = f"CentTranche2-{proposal.proposal_id[:6]}"[:31]
+                        logger.info(f"[CentPyramidEngine] Deploying Tranche 2 Market ({lot_size} lots)")
+                        self.execution_engine.execute_custom_order(
+                            symbol=symbol,
+                            side=proposal.direction,
+                            volume=lot_size,
+                            stop_loss=proposal.structural_sl,
+                            take_profit=proposal.suggested_tp,
+                            comment=tranche2_comment,
+                            proposal=proposal
+                        )
 
             if success:
                 executed_count += 1

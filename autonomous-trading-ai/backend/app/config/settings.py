@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     # Target Assets
     DEFAULT_SYMBOLS: list[str] = ["XAUUSD", "BTCUSD"]
     
+    # Cent Account & Multi-Entry Pyramiding Settings (200 - 1,000 USC)
+    CENT_ACCOUNT_MODE: bool = Field(default=True, env="CENT_ACCOUNT_MODE")
+    CENT_TRANCHE_MIN_LOT: float = Field(default=0.10, env="CENT_TRANCHE_MIN_LOT")
+    CENT_TRANCHE_MAX_LOT: float = Field(default=0.20, env="CENT_TRANCHE_MAX_LOT")
+    CENT_MAX_TRANCHES: int = Field(default=5, env="CENT_MAX_TRANCHES")
+    CENT_FAST_BREAKEVEN_PIPS: float = Field(default=0.40, env="CENT_FAST_BREAKEVEN_PIPS")  # $0.40 move triggers BE
+    CENT_TP1_PIPS: float = Field(default=1.20, env="CENT_TP1_PIPS")                       # $1.20 move triggers 50% partial TP
+
     # MT5 / Broker Configuration (Future HFM execution)
     MT5_ENABLED: bool = Field(default=False, env="MT5_ENABLED")
     MT5_MODE: str = Field(default="disabled", env="MT5_MODE")

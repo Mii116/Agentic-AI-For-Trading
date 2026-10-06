@@ -626,4 +626,84 @@ If a trade does not reach a hard broker Take-Profit (or if a position has an ope
 3. **M5 Exhaustion Exit:** If price forms **2 consecutive 5-minute rejection candles with large counter-wicks ($\ge 50\%$) and falling volume**, the Danger Sentry fires an emergency proactive market close to bank remaining floating profits before a structural reversal occurs.
 4. **Opposing Reversal Clearance:** If an opposing setup of high confluence ($\ge 80\%$) triggers on the same magic number, the Arbiter closes the active position at market prior to opening the reverse trade.
 
+---
+
+## 8. CENT PYRAMID ENGINE SPECIFICATION: MULTI-ENTRY TRANCHING, FAST BREAKEVEN FLOOR, 50% TP1 HARVESTING & STEPPED STOP LOSS RATCHET (OCTOBER 6, 2026)
+
+### A. Architectural Motivation & Micro-Capital Scaling
+For smaller account balances ($50 to $250 USD equivalent, representing 5,000 to 25,000 USC on Cent accounts), rigid single-position execution restricts compounding velocity. The **Cent Pyramid Engine** translates manual multi-entry scaling and aggressive zero-risk hedging into a deterministic, high-probability execution workflow:
+1. **Multi-Tranche Deployment (2 to 5 concurrent positions):** Opens 2 initial tranches sized between **0.10 and 0.20 lots** per setup, allowing up to 5 concurrent positions as trend continuation confirms.
+2. **Fast Breakeven Floor (Zero-Risk Floor at +40 pips / +$0.40):** As price moves favorably by $0.40, the Stop Loss is automatically advanced to `Entry ± SpreadBuffer ($0.20)`, converting the trade into a completely risk-free floor before pullbacks can scratch equity.
+3. **Partial Profit Harvesting (TP1 at +120 pips / +$1.20):** Liquidates 50% of the active volume upon reaching Take Profit 1 (+120 pips / $1.20 on Gold or 1:1 R:R), securing realized gains while tagging the remaining 50% volume as an active `PYRAMID_RUNNER`.
+4. **Pullback Re-Entry (Trend Pyramiding):** Awaits a confirmed structural retracement ($0.40–$0.80 pullback) towards order blocks / FVGs in the prevailing trend, deploying a secondary continuation tranche (0.10–0.20 lots) up to the 5-position ceiling.
+5. **Stepped Stop Loss Ratchet:** Upon secondary continuation fill, immediately ratchets the Stop Loss on the original runner up to the re-entry fill level, guaranteeing locked-in green profit across the entire initial move, while trailing stops higher as momentum expands.
+
+---
+
+### B. Core Parameter Configuration (`settings.py`)
+
+| Parameter | Default | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `CENT_ACCOUNT_MODE` | `True` | `bool` | Enables Cent account multi-entry scaling and stepped ratchet mechanics. |
+| `CENT_TRANCHE_MIN_LOT` | `0.10` | `float` | Minimum lot size allocated per individual tranche. |
+| `CENT_TRANCHE_MAX_LOT` | `0.20` | `float` | Maximum lot size allocated per individual tranche. |
+| `CENT_MAX_TRANCHES` | `5` | `int` | Maximum concurrent active positions permitted in Cent mode. |
+| `CENT_FAST_BREAKEVEN_PIPS` | `0.40` | `float` | Price distance ($0.40 on Gold / 40 pips) that triggers immediate advance of SL to Breakeven. |
+| `CENT_TP1_PIPS` | `1.20` | `float` | Price distance ($1.20 on Gold / 120 pips) that triggers 50% partial volume liquidation. |
+
+---
+
+### C. Mathematical Mechanics & Algorithmic Workflow
+
+```mermaid
+flowchart TD
+    A["Signal Approved by Arbiter"] --> B["Deploy Initial Tranches (2x 0.10-0.20 lots)"]
+    B --> C{"Price Moves +$0.40?"}
+    C -- Yes --> D["Fast Breakeven Floor: Advance SL to Entry ± $0.20"]
+    C -- No --> E["Standard Structural Stop Active"]
+    D --> F{"Price Tags TP1 (+$1.20)?"}
+    F -- Yes --> G["Liquidate 50% Active Volume (Bank 1R)"]
+    G --> H["Tag Remainder as Active PYRAMID_RUNNER"]
+    H --> I{"Pullback to Retest Zone ($0.40-$0.80 Retrace)?"}
+    I -- Yes --> J["Enter Continuation Tranche (0.10-0.20 lots)"]
+    J --> K["STEPPED STOP RATCHET: Move Runner SL to New Fill Price"]
+    K --> L["Trail All Stops Behind Confirmed M1/M5 Swing Pivots"]
+```
+
+#### 1. Tranche Lot Sizing Formula (`capital_manager.py`)
+Under `CENT_ACCOUNT_MODE = True`, tranche sizing dynamically scales across equity tiers:
+$$\text{Ratio} = \max\left(0.0, \min\left(1.0, \frac{\text{CurrentEquity} - 200.0}{800.0}\right)\right)$$
+$$\text{TrancheLot} = \text{round}\Big(\text{TrancheMin} + \text{Ratio} \times (\text{TrancheMax} - \text{TrancheMin}), 2\Big)$$
+- At **200 USC**: Tranche Lot = **0.10 lots**.
+- At **500 USC**: Tranche Lot = **0.14 lots**.
+- At **1,000+ USC**: Tranche Lot = **0.20 lots**.
+- **Trap Guard Bypass:** Standard single-position Micro-Trap Guard rejections are bypassed for Cent Mode, as the broker cent contract units enable fractional scaling without risk of over-leveraging.
+
+#### 2. Fast Breakeven Floor Logic (`danger_sentry.py`)
+Evaluated on every market tick:
+- **BUY Positions:**
+  $$\text{Gain} = \text{Price}_{\text{current}} - \text{Price}_{\text{open}}$$
+  $$\text{If } \text{Gain} \ge \$0.40 \implies \text{SL}_{\text{target}} = \text{round}(\text{Price}_{\text{open}} + \text{SpreadBuffer}_{\text{Gold}}, 2)$$
+- **SELL Positions:**
+  $$\text{Gain} = \text{Price}_{\text{open}} - \text{Price}_{\text{current}}$$
+  $$\text{If } \text{Gain} \ge \$0.40 \implies \text{SL}_{\text{target}} = \text{round}(\text{Price}_{\text{open}} - \text{SpreadBuffer}_{\text{Gold}}, 2)$$
+- **Enforcement:** Enforces `MIN_STOP_DISTANCE ($1.50)` from current price. Once modified, ticket is recorded in `_be_secured_tickets` to eliminate redundant broker calls (`retcode=10025`).
+
+#### 3. TP1 50% Volume Harvest & Runner Transition (`danger_sentry.py`)
+- When $\text{Gain} \ge \$1.20$ (or 1:1 R:R):
+  $$\text{CloseVolume} = \text{round}(\text{PositionVolume} \times 0.50, 2)$$
+  $$\text{Execution: } \text{execution\_engine.partial\_close\_position}(\text{ticket}, \text{CloseVolume})$$
+- Position is flagged as `journal.partial_closed = True` and added to `_pyramid_runners`.
+- Remaining 50% volume is converted into an unconstrained trailing runner.
+
+#### 4. Pullback Continuation Entry & Stepped Ratchet (`danger_sentry.py` / `arbiter.py`)
+- **Continuation Trigger:** When a runner is active, if price retraces towards the entry level ($0.40 to $0.80 retracement) while maintaining macro trend structure, and open positions $< 5$:
+  - Sentry / Arbiter fires continuation order sized at `0.10 - 0.20` lots with comment `CentPyramid-Continuation`.
+- **Stepped SL Ratchet:**
+  - Upon fill of the continuation order at $\text{Price}_{\text{fill}}$:
+    $$\text{BUY Runner: } \text{SL}_{\text{runner}} \leftarrow \min(\text{Price}_{\text{fill}}, \text{Price}_{\text{current}} - \$1.50)$$
+    $$\text{SELL Runner: } \text{SL}_{\text{runner}} \leftarrow \max(\text{Price}_{\text{fill}}, \text{Price}_{\text{current}} + \$1.50)$$
+  - **Result:** The original runner's stop loss is immediately locked in at the re-entry level, mathematically guaranteeing a large green gain even if price whipsaws back to the re-entry price.
+  - As price expands further, the structural trailing engine ratchets stops for both positions behind newly confirmed M5 swing pivots.
+
 

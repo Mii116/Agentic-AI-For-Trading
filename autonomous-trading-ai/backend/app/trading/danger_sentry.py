@@ -10,6 +10,7 @@ from app.agent.post_mortem import PostMortemEngine
 from app.indicators.smc import SMCAnalyzer
 from app.trading.cooldown_manager import MarketCooldownManager
 from app.risk.stop_policy import MIN_STOP_DISTANCE, enforce_min_stop
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,9 @@ class DangerSentry:
         self.execution_engine = execution_engine
         self.post_mortem = PostMortemEngine()
         self._last_evaluated_m5_time: Optional[Any] = None
+        self._be_secured_tickets: set = set()
+        self._pyramid_runners: set = set()
+        self._scaled_in_tickets: set = set()
 
     def inspect_positions_for_danger(
         self,
@@ -119,7 +123,10 @@ class DangerSentry:
                 in_limit_buffer = is_limit_entry and (pos_age_sec < self.LIMIT_BUFFER_PERIOD_SECONDS)
                 in_grace_period = (not is_limit_entry) and (pos_age_sec < self.GRACE_PERIOD_SECONDS)
 
-                # === 2. STRUCTURAL 50% PARTIAL TAKE-PROFIT & TRAILING AT 1:1 R:R ===
+                # === 2. CENT PYRAMID ENGINE FLOW (FAST BE, TP1 HARVEST, STEPPED RATCHET) ===
+                self._check_cent_pyramid_flow(pos, journal, db, symbol, m5_bars)
+
+                # === 2B. STRUCTURAL 50% PARTIAL TAKE-PROFIT & TRAILING AT 1:1 R:R ===
                 self._check_and_execute_partial_tp(pos, journal, db, symbol, m5_bars)
                 self._apply_floating_profit_protection(pos, journal, db, symbol, m5_bars)
                 self._attempt_scale_in(pos, journal, db, symbol)
@@ -251,6 +258,137 @@ class DangerSentry:
             return []
         finally:
             db.close()
+
+    def _check_cent_pyramid_flow(
+        self,
+        pos,
+        journal,
+        db,
+        symbol: str,
+        m5_bars: Optional[List[Any]] = None
+    ):
+        """
+        Cent Pyramid Engine (0.10 - 0.20 Lot Multi-Tranche Deployment):
+        1. Fast Breakeven Floor: Once floating move reaches +$0.40 (settings.CENT_FAST_BREAKEVEN_PIPS),
+           advances Stop Loss to Breakeven (Entry ± Spread Buffer $0.20) to guarantee a zero-risk floor.
+        2. Partial Profit Harvesting (TP1): At +$1.20 (settings.CENT_TP1_PIPS) or 1:1 R:R, liquidates
+           50% of the active volume and designates the remainder as an active PYRAMID_RUNNER.
+        3. Stepped Stop Loss Ratchet: When secondary continuation / scale-in positions fill, ratchets
+           the Stop Loss on older runner positions up to the re-entry fill price (locking green profit),
+           then structural trailing advances all stops behind confirmed M1/M5 swing pivots.
+        """
+        if not getattr(settings, "CENT_ACCOUNT_MODE", False):
+            return
+
+        side = "BUY" if pos.type == mt5.ORDER_TYPE_BUY else "SELL"
+        entry_price = float(pos.price_open)
+        current_price = float(pos.price_current)
+        sl = float(pos.sl)
+        volume = float(pos.volume)
+        ticket = pos.ticket
+
+        fast_be_pips = getattr(settings, "CENT_FAST_BREAKEVEN_PIPS", 0.40)
+        tp1_pips = getattr(settings, "CENT_TP1_PIPS", 1.20)
+
+        # 1. Fast Breakeven Floor (Zero-Risk Floor)
+        if side == "BUY":
+            gain = current_price - entry_price
+            if gain >= fast_be_pips and ticket not in self._be_secured_tickets:
+                target_be = round(entry_price + self.SPREAD_BUFFER_GOLD, 2)
+                # Never push closer than MIN_STOP_DISTANCE to current price
+                target_be = min(target_be, round(current_price - MIN_STOP_DISTANCE, 2))
+                if target_be > sl:
+                    logger.info(
+                        f"[CentPyramidEngine] Fast Breakeven Floor reached (+${gain:.2f} >= +${fast_be_pips:.2f}) "
+                        f"for BUY #{ticket}! Advancing SL to {target_be:.2f}."
+                    )
+                    modified = False
+                    if self.execution_engine:
+                        modified = self.execution_engine.modify_position_sl(ticket, target_be)
+                    else:
+                        modified = self._direct_modify_sl(pos, target_be)
+                    if modified:
+                        self._be_secured_tickets.add(ticket)
+
+        elif side == "SELL":
+            gain = entry_price - current_price
+            if gain >= fast_be_pips and ticket not in self._be_secured_tickets:
+                target_be = round(entry_price - self.SPREAD_BUFFER_GOLD, 2)
+                target_be = max(target_be, round(current_price + MIN_STOP_DISTANCE, 2))
+                if sl == 0.0 or target_be < sl:
+                    logger.info(
+                        f"[CentPyramidEngine] Fast Breakeven Floor reached (+${gain:.2f} >= +${fast_be_pips:.2f}) "
+                        f"for SELL #{ticket}! Advancing SL to {target_be:.2f}."
+                    )
+                    modified = False
+                    if self.execution_engine:
+                        modified = self.execution_engine.modify_position_sl(ticket, target_be)
+                    else:
+                        modified = self._direct_modify_sl(pos, target_be)
+                    if modified:
+                        self._be_secured_tickets.add(ticket)
+
+        # 2. Partial Profit Harvesting (TP1) & Runner Holding
+        is_already_harvested = (journal and getattr(journal, "partial_closed", False)) or (ticket in self._pyramid_runners)
+        if not is_already_harvested:
+            hit_tp1 = False
+            if side == "BUY" and (current_price - entry_price) >= tp1_pips:
+                hit_tp1 = True
+            elif side == "SELL" and (entry_price - current_price) >= tp1_pips:
+                hit_tp1 = True
+
+            if hit_tp1:
+                close_vol = round(volume * 0.5, 2)
+                if close_vol >= 0.01:
+                    logger.info(
+                        f"[CentPyramidEngine] TP1 Tagged (+${tp1_pips:.2f}) on #{ticket} ({side} {volume} lots)! "
+                        f"Liquidating 50% ({close_vol} lots) and tagging remaining as PYRAMID_RUNNER."
+                    )
+                    success = False
+                    if self.execution_engine:
+                        success = self.execution_engine.partial_close_position(ticket, close_vol)
+                    if success or not self.execution_engine:
+                        self._pyramid_runners.add(ticket)
+                        if journal:
+                            journal.partial_closed = True
+                            db.commit()
+
+        # 3. Stepped Stop Loss Ratchet for Runners upon Pullback Continuation
+        comment_str = str(getattr(pos, "comment", "") or "").upper()
+        if "SCALE" in comment_str or "PYRAMID" in comment_str or (journal and getattr(journal, "is_scale_in", False)):
+            all_positions = mt5.positions_get(symbol=symbol) or []
+            for other in all_positions:
+                if other.ticket == ticket or other.magic != pos.magic:
+                    continue
+                other_side = "BUY" if other.type == mt5.ORDER_TYPE_BUY else "SELL"
+                if other_side != side:
+                    continue
+                # If other is an older position (runner)
+                if other.time < pos.time:
+                    re_entry_level = round(float(pos.price_open), 2)
+                    other_sl = float(other.sl)
+                    if side == "BUY" and re_entry_level > other_sl:
+                        cand_sl = min(re_entry_level, round(current_price - MIN_STOP_DISTANCE, 2))
+                        if cand_sl > other_sl:
+                            logger.info(
+                                f"[CentPyramidEngine] Stepped Stop Loss Ratchet! Advancing runner #{other.ticket} SL "
+                                f"from {other_sl:.2f} to re-entry fill level {cand_sl:.2f} (Locking profit)."
+                            )
+                            if self.execution_engine:
+                                self.execution_engine.modify_position_sl(other.ticket, cand_sl)
+                            else:
+                                self._direct_modify_sl(other, cand_sl)
+                    elif side == "SELL" and (other_sl == 0.0 or re_entry_level < other_sl):
+                        cand_sl = max(re_entry_level, round(current_price + MIN_STOP_DISTANCE, 2))
+                        if other_sl == 0.0 or cand_sl < other_sl:
+                            logger.info(
+                                f"[CentPyramidEngine] Stepped Stop Loss Ratchet! Advancing runner #{other.ticket} SL "
+                                f"from {other_sl:.2f} to re-entry fill level {cand_sl:.2f} (Locking profit)."
+                            )
+                            if self.execution_engine:
+                                self.execution_engine.modify_position_sl(other.ticket, cand_sl)
+                            else:
+                                self._direct_modify_sl(other, cand_sl)
 
     def _check_and_execute_partial_tp(
         self,
@@ -532,19 +670,30 @@ class DangerSentry:
         sl = float(pos.sl)
         volume = float(pos.volume)
 
-        # Ensure SL is in profit territory and position is in profit
+        # Ensure SL is secured and position is in profit
         if sl <= 0 or float(pos.profit) <= 0:
             return
 
-        # Simple pullback detection: price within $0.5 of entry
-        if abs(current_price - entry_price) > 0.5:
+        is_cent_mode = getattr(settings, "CENT_ACCOUNT_MODE", False)
+        max_tranches = getattr(settings, "CENT_MAX_TRANCHES", 5) if is_cent_mode else 2
+        all_open = mt5.positions_get(symbol=symbol) or []
+        if len(all_open) >= max_tranches:
             return
 
-        scale_vol = round(volume * 0.5, 2)
+        # Pullback detection: price within $0.80 of entry on Gold
+        pullback_threshold = 0.80 if is_cent_mode else 0.50
+        if abs(current_price - entry_price) > pullback_threshold:
+            return
+
+        if is_cent_mode:
+            scale_vol = getattr(settings, "CENT_TRANCHE_MIN_LOT", 0.10)
+        else:
+            scale_vol = round(volume * 0.5, 2)
+
         if scale_vol < 0.01:
             return
 
-        comment = f"ScaleIn-{pos.ticket}"
+        comment = f"CentPyramid-{pos.ticket}" if is_cent_mode else f"ScaleIn-{pos.ticket}"
         success = False
         if self.execution_engine and hasattr(self.execution_engine, "execute_custom_order"):
             success = self.execution_engine.execute_custom_order(
@@ -580,7 +729,7 @@ class DangerSentry:
             if journal:
                 journal.is_scale_in = True
                 db.commit()
-            logger.info(f"[Scale‑In] Placed {side} scale‑in of {scale_vol} lots for ticket {pos.ticket}")
+            logger.info(f"[CentPyramidEngine] Placed {side} continuation tranche of {scale_vol} lots for ticket {pos.ticket} (Total open: {len(all_open) + 1}/{max_tranches})")
 
     def _direct_close_position(self, pos) -> bool:
         """Direct MT5 emergency close fallback."""

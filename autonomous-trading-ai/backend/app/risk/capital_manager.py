@@ -4,6 +4,8 @@ from typing import Tuple, Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+from app.config.settings import settings
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -104,9 +106,12 @@ class CapitalManager:
 
         tier = AccountTier.get_tier(current_equity)
 
-        if current_open_positions_count >= tier.max_concurrent_positions:
+        # Cent Account Pyramiding Mode allows scaling into 2 to 5 concurrent positions
+        max_positions = getattr(settings, "CENT_MAX_TRANCHES", 5) if getattr(settings, "CENT_ACCOUNT_MODE", False) else tier.max_concurrent_positions
+
+        if current_open_positions_count >= max_positions:
             reason = (f"Account Tier Gate: Active positions ({current_open_positions_count}) "
-                      f"reached maximum allowed ({tier.max_concurrent_positions}) for {tier.tier_name}.")
+                      f"reached maximum allowed ({max_positions}) for {tier.tier_name} (CentMode={getattr(settings, 'CENT_ACCOUNT_MODE', False)}).")
             logger.warning(reason)
             return False, reason, tier
 
@@ -143,6 +148,20 @@ class CapitalManager:
         price_diff = abs(entry_price - stop_loss)
         if price_diff <= 0 or point <= 0:
             return None, "Invalid Stop Loss: distance to entry price is zero."
+
+        # Cent Account Tranche Pyramiding Profile (200 - 1,000+ USC)
+        if getattr(settings, "CENT_ACCOUNT_MODE", False):
+            tranche_min = getattr(settings, "CENT_TRANCHE_MIN_LOT", 0.10)
+            tranche_max = getattr(settings, "CENT_TRANCHE_MAX_LOT", 0.20)
+            # Scale from 0.10 up to 0.20 as equity grows from 200 to 1,000 USC
+            ratio = max(0.0, min(1.0, (current_equity - 200.0) / 800.0))
+            cent_lot = round(tranche_min + (ratio * (tranche_max - tranche_min)), 2)
+            cent_lot = max(volume_min, min(cent_lot, volume_max))
+            logger.info(
+                f"[CentPyramidEngine] Sized Tranche Lot: {cent_lot} for equity {current_equity:.1f} USC "
+                f"(Range: {tranche_min} - {tranche_max})"
+            )
+            return cent_lot, None
 
         sl_points = price_diff / point
         max_dollar_risk = current_equity * risk_pct
