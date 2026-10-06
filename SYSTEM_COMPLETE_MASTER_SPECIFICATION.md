@@ -855,6 +855,38 @@ Rather than waiting for the next market tick (`OnTick`), the EA hooks directly i
 - **Maximum Spread Filter:** If $\text{Spread} > \text{InpMaxSpreadPoints}$ ($35\text{ pts} / \$0.35$), resting brackets are immediately purged and new brackets are locked.
 - **Post-Exit Cooldown (`STATE_COOLDOWN`):** Enforces a mandatory $15$-second pause post-deal to eliminate whipsaw over-trading.
 
+---
+
+## 12. INDEPENDENT 24/7 RUNTIME ARCHITECTURE & STANDALONE LAUNCHERS (OCTOBER 6, 2026)
+
+### A. The IDE Child-Process Lifecycle Barrier
+When Python scripts (`run_bot.py` or `run_dashboard.py`) are launched inside an IDE terminal (VS Code, Antigravity, or PyCharm):
+1. **Parent-Child Process Tree:** Windows binds the running Python processes as direct children of the IDE host (`antigravity.exe` / `Code.exe`).
+2. **Termination Cascade:** Closing the IDE window sends an immediate `SIGTERM` / termination signal down the entire Windows process tree, terminating all child Python threads and web servers.
+
+---
+
+### B. The Independent 24/7 Solution: Standalone Desktop Launchers
+
+To run the platform 24/7 independently of the IDE, three standalone Windows batch scripts are provided in the project root:
+
+1. **`start_all.bat` (Master Standalone Launcher):**
+   - Spawns both the **Live Web Dashboard** (`localhost:8080`) and the **Autonomous Bot Engine** into independent, detached Windows console windows.
+   - Automatically opens your default web browser to the dashboard.
+   - **Crucial Benefit:** You can close the IDE completely, and both the bot and dashboard remain active 24/7.
+2. **`start_bot.bat`:**
+   - Dedicated launcher for running only the Python Trading Engine in an independent console.
+3. **`stop_all.bat`:**
+   - Gracefully terminates all background bot and dashboard processes with one click.
+
+---
+
+### C. Native MT5 Expert Advisor Independence
+Unlike Python scripts, the compiled MQL5 Expert Advisor (**`DynamicStraddleBreakoutScalper.ex5`**) executes directly inside the MetaTrader 5 terminal process (`terminal64.exe`):
+- It has **zero dependency on Python or the IDE**.
+- Once attached to an XAUUSD chart with `Algo Trading` enabled in MT5, it runs 24/7 as long as MetaTrader 5 remains open.
+
+
 
 
 
