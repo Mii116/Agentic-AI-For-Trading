@@ -135,13 +135,19 @@ class ChiefRiskArbiter:
                 # Gate 7C: Swing Trader HTF Macro Directional Alignment
                 # Scalp Trader (Magic 2002) is EXEMPT from Swing HTF macro directional veto
                 if p.magic_number == 1001:
-                    if p.direction == "BUY" and not macro_regime.get("allow_long", True):
+                    h1_trend = str(macro_regime.get("h1_trend") or "").upper()
+                    # Allow longs if macro_regime allows long OR H1 trend is Bullish OR Alpha Vantage yields approve swing long
+                    allow_long = macro_regime.get("allow_long", True) or ("BULLISH" in h1_trend) or macro_regime.get("allow_gold_swing_buy", False)
+                    # Allow shorts if macro_regime allows short OR H1 trend is Bearish
+                    allow_short = macro_regime.get("allow_short", True) or ("BEARISH" in h1_trend)
+
+                    if p.direction == "BUY" and not allow_long:
                         self._record_hypothesis_decision(
                             db, p, "REJECTED_MACRO_ALIGNMENT",
                             f"BUY proposal contradicts HTF Macro Regime ({macro_regime.get('regime')})"
                         )
                         continue
-                    if p.direction == "SELL" and not macro_regime.get("allow_short", True):
+                    if p.direction == "SELL" and not allow_short:
                         self._record_hypothesis_decision(
                             db, p, "REJECTED_MACRO_ALIGNMENT",
                             f"SELL proposal contradicts HTF Macro Regime ({macro_regime.get('regime')})"

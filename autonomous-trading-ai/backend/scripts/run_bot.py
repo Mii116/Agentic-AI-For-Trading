@@ -86,10 +86,23 @@ class InstitutionalBotOrchestrator:
 
             if bars_h4 and bars_h1:
                 regime = self.macro_director.analyze_regime(bars_h4, bars_h1, symbol=TARGET_SYMBOL)
+                # Blend Alpha Vantage Macro Worker Cache
+                try:
+                    macro_cache = self.macro_worker.get_macro_state()
+                    if macro_cache:
+                        regime["allow_gold_swing_buy"] = macro_cache.get("allow_gold_swing_buy", True)
+                        regime["us_10y_yield"] = macro_cache.get("us_10y_yield")
+                        regime["dxy_trend"] = macro_cache.get("dxy_trend")
+                        if macro_cache.get("allow_gold_swing_buy", False) and "BULLISH" in str(regime.get("h1_trend", "")):
+                            regime["allow_long"] = True
+                except Exception as e:
+                    logger.warning(f"Could not blend macro worker state into regime: {e}")
+
                 self.current_macro_regime = regime
                 logger.info(
-                    f"Macro Regime Updated: {regime['regime']} (Allow Long={regime['allow_long']}, "
-                    f"Allow Short={regime['allow_short']}) | Support: {regime['key_support']} | Resistance: {regime['key_resistance']}"
+                    f"Macro Regime Updated: {regime['regime']} (H1={regime.get('h1_trend')}, Allow Long={regime['allow_long']}, "
+                    f"Allow Short={regime['allow_short']}, Yield Approved={regime.get('allow_gold_swing_buy')}) | "
+                    f"Support: {regime['key_support']} | Resistance: {regime['key_resistance']}"
                 )
         except Exception as e:
             logger.error(f"Error in macro regime update: {e}")

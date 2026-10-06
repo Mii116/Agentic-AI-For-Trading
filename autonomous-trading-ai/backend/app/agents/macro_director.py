@@ -33,23 +33,35 @@ class MacroDirector:
         h4_smc = SMCAnalyzer.calculate_macro_regime(h4_bars)
         h1_smc = SMCAnalyzer.calculate_macro_regime(h1_bars)
 
+        # Determine quantitative regimes for both timeframes
+        h1_regime = h1_smc.get("regime", "NEUTRAL")
+        h4_regime = h4_smc.get("regime", "NEUTRAL")
+
         # Baseline quantitative regime
-        if h4_smc["regime"] == "BULLISH" and h1_smc["regime"] in ["BULLISH", "LEAN_BULLISH"]:
+        if h4_regime == "BULLISH" and h1_regime in ["BULLISH", "LEAN_BULLISH"]:
             quant_regime = "BULLISH"
-        elif h4_smc["regime"] == "BEARISH" and h1_smc["regime"] in ["BEARISH", "LEAN_BEARISH"]:
+        elif h4_regime == "BEARISH" and h1_regime in ["BEARISH", "LEAN_BEARISH"]:
             quant_regime = "BEARISH"
-        elif "BULLISH" in h4_smc["regime"] and "BULLISH" in h1_smc["regime"]:
+        elif "BULLISH" in h4_regime and "BULLISH" in h1_regime:
             quant_regime = "BULLISH"
-        elif "BEARISH" in h4_smc["regime"] and "BEARISH" in h1_smc["regime"]:
+        elif "BEARISH" in h4_regime and "BEARISH" in h1_regime:
             quant_regime = "BEARISH"
         else:
+            # If H4 is bearish but H1 is breaking bullish (or vice-versa), classify as active relief/neutral
             quant_regime = "NEUTRAL"
 
         current_price = h1_smc["current_price"] or h4_smc["current_price"]
 
+        # If H1 structure is bullish (trading above local EMAs), allow swing pullback longs
+        # If H1 structure is bearish (trading below local EMAs), allow swing pullback shorts
+        allow_long_quant = quant_regime in ["BULLISH", "NEUTRAL"] or "BULLISH" in h1_regime
+        allow_short_quant = quant_regime in ["BEARISH", "NEUTRAL"] or "BEARISH" in h1_regime
+
         result = {
             "symbol": symbol,
             "regime": quant_regime,
+            "h1_trend": h1_regime,
+            "h4_trend": h4_regime,
             "current_price": current_price,
             "h4_ema_50": h4_smc["ema_50"],
             "h4_ema_200": h4_smc["ema_200"],
@@ -59,8 +71,8 @@ class MacroDirector:
             "key_resistance": max(h4_smc["key_resistance"] or current_price, h1_smc["key_resistance"] or current_price),
             "h4_order_blocks": h4_smc["order_blocks"],
             "h1_order_blocks": h1_smc["order_blocks"],
-            "allow_long": quant_regime in ["BULLISH", "NEUTRAL"],
-            "allow_short": quant_regime in ["BEARISH", "NEUTRAL"],
+            "allow_long": allow_long_quant,
+            "allow_short": allow_short_quant,
             "analysis_source": "QUANT_SMC"
         }
 
@@ -68,14 +80,16 @@ class MacroDirector:
         if self.client:
             ai_verdict = self._query_gemini_director(result, h4_smc, h1_smc)
             if ai_verdict:
-                result["regime"] = ai_verdict.get("regime", quant_regime)
-                result["allow_long"] = result["regime"] in ["BULLISH", "NEUTRAL"]
-                result["allow_short"] = result["regime"] in ["BEARISH", "NEUTRAL"]
+                gemini_regime = ai_verdict.get("regime", quant_regime)
+                result["regime"] = gemini_regime
+                # Gemini regime respects H1 trend: do not veto H1 expansions purely on lagging H4 EMAs
+                result["allow_long"] = (gemini_regime in ["BULLISH", "NEUTRAL"]) or ("BULLISH" in h1_regime)
+                result["allow_short"] = (gemini_regime in ["BEARISH", "NEUTRAL"]) or ("BEARISH" in h1_regime)
                 result["director_thesis"] = ai_verdict.get("thesis", "")
                 result["analysis_source"] = "GEMINI_ENRICHED"
 
         logger.info(
-            f"Macro Director Assessment for {symbol}: Regime={result['regime']} | "
+            f"Macro Director Assessment for {symbol}: Regime={result['regime']} (H1={h1_regime}, H4={h4_regime}) | "
             f"Allow Long={result['allow_long']}, Allow Short={result['allow_short']} | "
             f"Key Range: [{result['key_support']} - {result['key_resistance']}]"
         )
@@ -86,13 +100,18 @@ class MacroDirector:
         You are the Institutional Macro Director AI for Gold (XAUUSD).
         Analyze the Higher Timeframe (H4 / H1) market structure:
         - Current Price: {quant_data['current_price']}
-        - H4 50 EMA: {h4_smc['ema_50']}, 200 EMA: {h4_smc['ema_200']}
-        - H1 50 EMA: {h1_smc['ema_50']}, 200 EMA: {h1_smc['ema_200']}
+        - H4 50 EMA: {h4_smc['ema_50']}, 200 EMA: {h4_smc['ema_200']} (Trend: {quant_data['h4_trend']})
+        - H1 50 EMA: {h1_smc['ema_50']}, 200 EMA: {h1_smc['ema_200']} (Trend: {quant_data['h1_trend']})
         - H4 Key Range: Support {h4_smc['key_support']} | Resistance {h4_smc['key_resistance']}
         - H1 Key Range: Support {h1_smc['key_support']} | Resistance {h1_smc['key_resistance']}
         - Detected Order Blocks: H4={len(h4_smc['order_blocks'])}, H1={len(h1_smc['order_blocks'])}
 
-        Determine the macro directional regime. Output ONLY a valid JSON object with:
+        IMPORTANT INSTITUTIONAL RULE:
+        If H1 structure is trading above local H1 EMAs with bullish momentum or expanding upward from support,
+        classify the regime as 'BULLISH' or 'NEUTRAL' (relief expansion) to permit valid swing pullback entries.
+        Do NOT rigidly output 'BEARISH' if active multi-session order flow is expanding upward.
+
+        Output ONLY a valid JSON object with:
         {{
             "regime": "BULLISH" | "BEARISH" | "NEUTRAL",
             "thesis": "Concise 1-2 sentence institutional rationale",

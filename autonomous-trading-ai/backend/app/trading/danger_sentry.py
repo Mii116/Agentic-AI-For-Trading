@@ -300,17 +300,17 @@ class DangerSentry:
                     if lows:
                         recent_swing_low = float(lows[-1]["price"])
 
-                if recent_swing_low and recent_swing_low >= entry_price:
-                    # Trailing behind swing low, locking in profit
-                    target_trailing_sl = round(max(entry_price + self.SPREAD_BUFFER_GOLD, recent_swing_low - buffer), 2)
-                elif recent_swing_low:
-                    # Swing low is below entry: trail behind swing low to let retest develop
-                    target_trailing_sl = round(max(sl, min(entry_price - self.SPREAD_BUFFER_GOLD, recent_swing_low - buffer)), 2)
+                if recent_swing_low and recent_swing_low >= (entry_price + self.SPREAD_BUFFER_GOLD):
+                    # Trailing behind advanced swing low, locking in higher profit
+                    target_trailing_sl = round(recent_swing_low - buffer, 2)
                 else:
+                    # Guarantee Breakeven + spread buffer ($0.30 - $0.50) to protect capital
                     target_trailing_sl = round(entry_price + self.SPREAD_BUFFER_GOLD, 2)
 
                 # Never place stop closer than $1.50 to current market price
                 target_trailing_sl = min(target_trailing_sl, round(current_price - MIN_STOP_DISTANCE, 2))
+                # Only ratchet forward, never pull back
+                target_trailing_sl = max(target_trailing_sl, round(sl + 0.10, 2))
 
         elif side == "SELL":
             risk_dist = sl - entry_price
@@ -324,15 +324,15 @@ class DangerSentry:
                     if highs:
                         recent_swing_high = float(highs[-1]["price"])
 
-                if recent_swing_high and recent_swing_high <= entry_price:
-                    target_trailing_sl = round(min(entry_price - self.SPREAD_BUFFER_GOLD, recent_swing_high + buffer), 2)
-                elif recent_swing_high:
-                    target_trailing_sl = round(min(sl, max(entry_price + self.SPREAD_BUFFER_GOLD, recent_swing_high + buffer)), 2)
+                if recent_swing_high and recent_swing_high <= (entry_price - self.SPREAD_BUFFER_GOLD):
+                    target_trailing_sl = round(recent_swing_high + buffer, 2)
                 else:
                     target_trailing_sl = round(entry_price - self.SPREAD_BUFFER_GOLD, 2)
 
                 # Never place stop closer than $1.50 to current market price
                 target_trailing_sl = max(target_trailing_sl, round(current_price + MIN_STOP_DISTANCE, 2))
+                # Only ratchet forward, never pull back
+                target_trailing_sl = min(target_trailing_sl, round(sl - 0.10, 2))
 
         if hit_1_to_1 and self.execution_engine:
             close_vol = round(pos.volume * 0.5, 2)

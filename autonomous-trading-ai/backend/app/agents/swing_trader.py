@@ -197,14 +197,20 @@ class SwingTrader:
                 logger.warning(f"[Swing Trader] BUY Setup vetoed by Alpha Vantage Macro Gate: {macro_reason}")
                 return None
 
-            # Structural Stop Loss anchored behind H1/30m swing low ($4.00 - $8.00 distance)
+            # Institutional Swing Stop Loss: Min $4.00, Max $8.00 - $10.00
+            # If the nearest swing low is too far (e.g. > $8.00 due to parabolic momentum),
+            # cap the stop behind the recent consolidation or ATR buffer to maintain realistic 1:1 R:R.
+            max_swing_stop = max(8.00, 2.5 * atr_14)
             if swing_lows:
                 anchor_low = swing_lows[-1]["price"]
-                structural_sl = anchor_low - max(1.0, 0.5 * atr_14)
+                raw_sl = anchor_low - max(1.0, 0.5 * atr_14)
+                if (latest_close - raw_sl) > max_swing_stop:
+                    structural_sl = latest_close - max_swing_stop
+                else:
+                    structural_sl = raw_sl
             else:
                 structural_sl = latest_close - max(4.0, 1.8 * atr_14)
 
-            # Ensure minimum $4.00 stop distance on Gold for swings to absorb intraday volatility
             # Limit entry at 50% equilibrium or top edge of 30m/15m FVG or demand block
             fvgs = SMCAnalyzer.detect_fair_value_gaps(eval_bars, lookback=20)
             bullish_fvgs = [f for f in fvgs if f["type"] == "BULLISH_FVG" and f["gap_high"] <= latest_close]
@@ -247,10 +253,15 @@ class SwingTrader:
         # === 4. BEARISH SWING SETUP ===
         is_bearish_structure = (bos and "BEARISH" in bos["type"]) or (choch and "BEARISH" in choch["type"])
         if not proposal and is_bearish_structure and ("BEARISH" in h4_trend or "BEARISH" in h1_trend):
-            # Structural Stop Loss anchored behind H1/30m swing high ($4.00 - $8.00 distance)
+            # Institutional Swing Stop Loss: Min $4.00, Max $8.00 - $10.00
+            max_swing_stop = max(8.00, 2.5 * atr_14)
             if swing_highs:
                 anchor_high = swing_highs[-1]["price"]
-                structural_sl = anchor_high + max(1.0, 0.5 * atr_14)
+                raw_sl = anchor_high + max(1.0, 0.5 * atr_14)
+                if (raw_sl - latest_close) > max_swing_stop:
+                    structural_sl = latest_close + max_swing_stop
+                else:
+                    structural_sl = raw_sl
             else:
                 structural_sl = latest_close + max(4.0, 1.8 * atr_14)
 
