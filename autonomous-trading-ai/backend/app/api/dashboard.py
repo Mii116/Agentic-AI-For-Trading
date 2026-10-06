@@ -1,7 +1,8 @@
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 import MetaTrader5 as mt5
@@ -12,6 +13,19 @@ from app.trading.mt5_engine import MT5ExecutionEngine
 from app.trading.danger_sentry import DangerSentry
 
 logger = logging.getLogger(__name__)
+
+# Strict Malaysia Time (MYT / UTC+8)
+MYT_TZ = timezone(timedelta(hours=8))
+
+class ManualTradeRequest(BaseModel):
+    symbol: str = "XAUUSD"
+    side: str = "BUY"  # BUY or SELL
+    volume: float = 0.10
+    sl_price: Optional[float] = None
+    tp_price: Optional[float] = None
+    sl_distance: Optional[float] = 2.50
+    tp_distance: Optional[float] = 5.00
+    comment: Optional[str] = "Manual Dashboard Execution"
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
@@ -89,7 +103,7 @@ def get_dashboard_status(db: Session = Depends(get_db)):
             "in_grace_period": in_grace_period,
             "grace_remaining_sec": round(grace_remaining_sec, 0),
             "pos_age_sec": round(pos_age_sec, 0),
-            "opened_at": datetime.fromtimestamp(p.time).strftime("%Y-%m-%d %H:%M:%S")
+            "opened_at": datetime.fromtimestamp(p.time, tz=timezone.utc).astimezone(MYT_TZ).strftime("%Y-%m-%d %H:%M:%S MYT")
         })
 
     spread_points = round((tick.ask - tick.bid) / point, 1) if tick else 0.0
@@ -147,8 +161,8 @@ def get_trade_journal(db: Session = Depends(get_db)):
             "danger_trigger": t.danger_trigger,
             "why_it_went_wrong": t.why_it_went_wrong,
             "lessons_learned": t.lessons_learned,
-            "opened_at": t.opened_at.strftime("%Y-%m-%d %H:%M:%S") if t.opened_at else "N/A",
-            "closed_at": t.closed_at.strftime("%Y-%m-%d %H:%M:%S") if t.closed_at else None
+            "opened_at": (t.opened_at.replace(tzinfo=timezone.utc) if t.opened_at.tzinfo is None else t.opened_at).astimezone(MYT_TZ).strftime("%Y-%m-%d %H:%M:%S MYT") if t.opened_at else "N/A",
+            "closed_at": (t.closed_at.replace(tzinfo=timezone.utc) if t.closed_at.tzinfo is None else t.closed_at).astimezone(MYT_TZ).strftime("%Y-%m-%d %H:%M:%S MYT") if t.closed_at else None
         })
 
     return journal_list
@@ -168,6 +182,65 @@ def emergency_close_all():
     engine = MT5ExecutionEngine()
     engine.close_all_positions()
     return {"status": "success", "message": "Closed all active MT5 positions."}
+
+@router.post("/execute-market-order")
+def execute_manual_market_order(req: ManualTradeRequest):
+    """
+    Executes a manual market BUY or SELL order directly on MT5 with explicit Stop Loss and Take Profit.
+    """
+    if not mt5.initialize():
+        raise HTTPException(status_code=503, detail="MT5 terminal not initialized or unavailable.")
+
+    tick = mt5.symbol_info_tick(req.symbol)
+    if not tick:
+        raise HTTPException(status_code=400, detail=f"Cannot retrieve live tick for {req.symbol}.")
+
+    side = req.side.upper()
+    if side not in ("BUY", "SELL"):
+        raise HTTPException(status_code=400, detail="Side must be BUY or SELL.")
+
+    ref_price = tick.ask if side == "BUY" else tick.bid
+
+    # Calculate or validate SL and TP
+    if req.sl_price is not None and req.sl_price > 0:
+        sl = float(round(req.sl_price, 2))
+    else:
+        dist = req.sl_distance if req.sl_distance and req.sl_distance > 0 else 2.50
+        sl = round(ref_price - dist if side == "BUY" else ref_price + dist, 2)
+
+    if req.tp_price is not None and req.tp_price > 0:
+        tp = float(round(req.tp_price, 2))
+    else:
+        dist = req.tp_distance if req.tp_distance and req.tp_distance > 0 else 5.00
+        tp = round(ref_price + dist if side == "BUY" else ref_price - dist, 2)
+
+    engine = MT5ExecutionEngine()
+    vol = max(0.01, round(float(req.volume), 2))
+    comment = (req.comment or "Manual Dashboard")[:31]
+
+    success = engine.execute_custom_order(
+        symbol=req.symbol,
+        side=side,
+        volume=vol,
+        stop_loss=sl,
+        take_profit=tp,
+        comment=comment,
+        proposal=None
+    )
+
+    if not success:
+        raise HTTPException(status_code=400, detail=f"Failed to execute manual {side} order on MT5. Check margin or connection.")
+
+    return {
+        "status": "success",
+        "message": f"Successfully executed manual {side} {vol} lots {req.symbol} at {ref_price:.2f} (SL: {sl:.2f}, TP: {tp:.2f})",
+        "side": side,
+        "volume": vol,
+        "price": ref_price,
+        "stop_loss": sl,
+        "take_profit": tp,
+        "timestamp_myt": datetime.now(MYT_TZ).strftime("%Y-%m-%d %H:%M:%S MYT")
+    }
 
 @router.get("/workflow")
 def get_live_workflow(db: Session = Depends(get_db)):
@@ -265,23 +338,52 @@ def get_live_workflow(db: Session = Depends(get_db)):
             "status_text": f"Grace Period Active ({rem_grace:.0f}s left)" if in_grace else "Active Monitoring (Buffered M5 Exhaustion & Invalidation)"
         })
 
-    # 6. Recent Decision Stream (Last 12 hypotheses)
-    hypotheses = db.query(TradingHypothesis).order_by(desc(TradingHypothesis.id)).limit(12).all()
+    # 6. Recent Decision Stream (Last 20 hypotheses)
+    hypotheses = db.query(TradingHypothesis).order_by(desc(TradingHypothesis.id)).limit(20).all()
     decision_stream = []
     for h in hypotheses:
+        # Strict Malaysia Time (UTC+8)
+        placed_dt = h.created_at
+        if placed_dt and placed_dt.tzinfo is None:
+            placed_dt = placed_dt.replace(tzinfo=timezone.utc)
+        placed_myt = placed_dt.astimezone(MYT_TZ).strftime("%Y-%m-%d %H:%M:%S MYT") if placed_dt else "N/A"
+
+        fired_myt = placed_myt if h.status in ("APPROVED", "EXECUTED") else "Pending Fill / Gated"
+
+        entry_val = f"${h.entry_price_estimate:.2f}" if h.entry_price_estimate else "Market Zone"
+        sl_val = f"${h.suggested_stop_loss:.2f}" if h.suggested_stop_loss else "--"
+
+        # Explicit TP 1 (Cent Scalp +$1.20 / 1:1 R:R) and TP 2 (Structural Expansion)
+        tp1_val = "--"
+        tp2_val = f"${h.suggested_take_profit:.2f}" if h.suggested_take_profit else "--"
+        if h.entry_price_estimate and h.suggested_stop_loss:
+            risk_dist = abs(h.entry_price_estimate - h.suggested_stop_loss)
+            tp1_dist = min(1.20, risk_dist) if risk_dist > 0 else 1.20
+            if h.direction == "BUY":
+                tp1_price = round(h.entry_price_estimate + tp1_dist, 2)
+            else:
+                tp1_price = round(h.entry_price_estimate - tp1_dist, 2)
+            tp1_val = f"${tp1_price:.2f}"
+
         decision_stream.append({
             "id": h.id,
             "strategy": h.strategy_type,
             "direction": h.direction,
             "confidence": f"{round((h.confidence or 0.0) * 100)}%",
             "status": h.status,
+            "entry_zone": entry_val,
+            "stop_loss": sl_val,
+            "tp_1": tp1_val,
+            "tp_2": tp2_val,
+            "placed_timestamp": placed_myt,
+            "fired_timestamp": fired_myt,
             "thesis": h.thesis,
             "notes": h.supporting_evidence,
-            "timestamp": h.created_at.strftime("%H:%M:%S") if hasattr(h, "created_at") and h.created_at else "Recent"
+            "timestamp": placed_myt
         })
 
     return {
-        "timestamp": now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "timestamp": datetime.now(MYT_TZ).strftime("%Y-%m-%d %H:%M:%S MYT"),
         "macro_director": {
             "regime": macro_regime,
             "yield_10y": yield_val,

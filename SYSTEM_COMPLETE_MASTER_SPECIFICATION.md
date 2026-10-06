@@ -706,4 +706,34 @@ Evaluated on every market tick:
   - **Result:** The original runner's stop loss is immediately locked in at the re-entry level, mathematically guaranteeing a large green gain even if price whipsaws back to the re-entry price.
   - As price expands further, the structural trailing engine ratchets stops for both positions behind newly confirmed M5 swing pivots.
 
+---
+
+## 9. LIVE INSTITUTIONAL DASHBOARD TERMINAL SPECIFICATION (OCTOBER 6, 2026)
+
+### A. Architectural Overview & Executive Features
+The live web dashboard (`http://localhost:8080`, served via FastAPI in `app/main.py`, `app/api/dashboard.py`, and `app/static/index.html`) provides an institutional visual command center for monitoring dual-trader decision trees, executing manual market orders, and inspecting real-time market microstructure:
+1. **Real-Time Candlestick Chart Integration:** Embedded TradingView Advanced Chart widget (`OANDA:XAUUSD`, 5m interval) with full technical analysis indicators, volume, and locked strictly to `Asia/Kuala_Lumpur` timezone.
+2. **Institutional Fast Order Router (Manual Intervention):**
+   - High-visibility Buy (`#10b981`) and Sell (`#f43f5e`) execution buttons linked directly to MT5 backend via `POST /api/dashboard/execute-market-order`.
+   - Rapid volume selection chips (`0.01`, `0.10`, `0.20`, `0.50` lots).
+   - Dynamic real-time Stop Loss & Take Profit distance calculators based on live Bid/Ask quotes.
+   - One-click Emergency Panic Close All liquidation.
+3. **High-Frequency Live Telemetry Streaming (1.5s Auto-Refresh):**
+   - Auto-polls `/api/dashboard/status`, `/api/dashboard/journal`, and `/api/dashboard/workflow` every 1,500ms.
+   - Dynamic live status indicator with animated green pulse dot (`Streaming Live • 1.5s Auto-Refresh`).
+4. **Restructured Decision Pipeline & Audit Table:**
+   - Explicit parameter columns replacing vague thesis text:
+     - **Strategy Mind & Magic:** Swing (`1001`) vs. Scalp (`2002`).
+     - **Direction & Confidence Score:** `BUY` / `SELL` with confidence percentage.
+     - **Buy / Entry Zone:** Exact entry price or limit retest zone.
+     - **Stop Loss (SL) Price:** Exact stop level with dollar distance.
+     - **Take Profit Targets:** Explicit `TP 1` (Fast Scalp / Cent harvest at +$1.20 / 1:1) and `TP 2` (Structural expansion target).
+     - **Placed Time vs. Fired Time:** Distinguishes when the agent formulated the proposal vs. when the broker executed the order.
+     - **Decision / Status:** `APPROVED`, `EXECUTED`, `REJECTED_ZONE_DEBOUNCE`, `REJECTED_CIRCUIT_BREAKER`, etc.
+     - **Thesis & Gating Rationale:** Concise summary of market structure confluences.
+5. **Strict Malaysia Timezone Standard (MYT / UTC+8):**
+   - All timestamps across every view (Header live clock, Decision Stream, Active Positions, and Trade Journal) are locked strictly to `Asia/Kuala_Lumpur` (`UTC+8`).
+6. **Glassmorphism Visual Design System:**
+   - Dark obsidian background (`#060911`), translucent glass cards (`rgba(14, 21, 37, 0.75)` with `backdrop-filter: blur(12px)`), vibrant gradient accents, and Google Fonts (`Outfit` for UI, `JetBrains Mono` for tabular prices).
+
 
