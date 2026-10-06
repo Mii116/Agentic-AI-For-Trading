@@ -736,4 +736,29 @@ The live web dashboard (`http://localhost:8080`, served via FastAPI in `app/main
 6. **Glassmorphism Visual Design System:**
    - Dark obsidian background (`#060911`), translucent glass cards (`rgba(14, 21, 37, 0.75)` with `backdrop-filter: blur(12px)`), vibrant gradient accents, and Google Fonts (`Outfit` for UI, `JetBrains Mono` for tabular prices).
 
+---
+
+### B. High-Density Institutional Table Architecture & Anti-Bloat Engineering
+In early dashboard iterations, displaying raw multi-sentence SMC theses (often 100+ words) inside inline `<td>` cells caused severe UI degradation:
+1. **Vertical Bloating:** Rows expanded to ~250px in height, allowing only 2–3 rows per viewport and leaving numerical metrics (Entry, SL, TP) floating in vast empty black voids.
+2. **Horizontal Disconnection:** Browser `table-layout: auto` distributed excess screen width unevenly, creating 150px–200px empty spaces between adjacent columns.
+
+#### Architectural Redesign (`dense-grid` & Master-Detail Accordion)
+To deliver a world-class institutional terminal matching Bloomberg and TradingView aesthetics:
+- **Strict Row Height & Fixed Geometry:** `table.dense-grid` enforces `table-layout: fixed` and standard `48px` row height with subtle horizontal gridlines (`border-bottom: 1px solid rgba(255, 255, 255, 0.04)`) and alternating row striping.
+- **Monospace Tabular Alignment:** All price targets (Entry in cyan `#38bdf8`, SL in soft rose `#fb7185`, TP1 in emerald `#34d399`, TP2 in lavender `#c084fc`) use `JetBrains Mono` with fixed widths, eliminating misalignment across rows.
+- **Stacked Dual-Line MYT Timestamps:** Compact 2-line rendering (Time `HH:MM:SS` on line 1 in white bold, Date `DD Mon MYT` on line 2 in dim gray) prevents horizontal stretching.
+- **Fluid Thesis Truncation:** The main row thesis summary fluidly consumes remaining container width with single-line ellipsis truncation (`overflow: hidden; text-overflow: ellipsis; white-space: nowrap`), backed by full hover tooltips.
+- **Forensic Master-Detail Inspection Drawer (`drawer-row`):** Clicking any row or the `▼ Audit` button smoothly slides open a dedicated 3-box diagnostic panel below the row:
+  1. **SMC Strategy Thesis & Confluences Box:** HTF trend alignment, liquidity pool mitigations, fair value gaps, and equilibrium entry calculations.
+  2. **Order Structure & Target Levels Box:** Clean 2x2 target matrix displaying exact Entry Zone, Stop Loss, Take Profit 1 (+120 pips), and Take Profit 2 (Runner), along with Cent Pyramiding harvest rules.
+  3. **Chief Arbiter Decision Audit Box:** Gating verdict (`APPROVED`, `EXECUTED`, `REJECTED`), shared margin cap verification (≤ 20%), $3.00 debounce proximity checks, and self-check logs.
+
+---
+
+### C. Active Position Sentry & Closed Journal Diagnostics
+- **Active Positions Grid:** Real-time tracking of open tickets, Cent Pyramid tranche role (`1001` vs `2002`), current tick price, floating PnL, live 180s grace period countdown bar, danger score (0–100%), and one-click emergency market close.
+- **Trade Journal & Post-Mortem Diagnostics:** Closed trade ledger recording open/close MYT timestamps, technique tag (`SMC_PULLBACK_RETEST`, `CENT_PYRAMID`), realized dollar PnL, and automated AI post-mortem diagnosis explaining why stopped out or validated.
+
+
 
