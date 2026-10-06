@@ -811,6 +811,51 @@ Prior to this enhancement, historical logs revealed that orders were placed and 
 - Hypotheses flagged with `ARMED_HOLDING_LIMIT` display a distinct amber badge: **`⏳ ARMED (LIMIT)`**.
 - Confirms to the user that the system is patiently holding the active limit orders in the broker order book, awaiting price mitigation.
 
+---
+
+## 11. MQL5 LOW-LATENCY DYNAMIC STRADDLE BREAKOUT SCALPER SPECIFICATION (`DynamicStraddleBreakoutScalper.mq5`)
+
+### A. Executive Overview & Execution Architecture
+To execute tick-level momentum breakouts with native MQL5 performance (< 1ms execution loop), the system incorporates a native MetaTrader 5 Expert Advisor: **`DynamicStraddleBreakoutScalper.mq5`** (compiled as `DynamicStraddleBreakoutScalper.ex5`).
+- **Target Asset & Timeframe:** `XAUUSD` (Gold), M1 execution.
+- **Account Mode:** Raw ECN / Zero Spread, Hedge Account mode.
+- **Magic Number Isolation:** `2002` (Segregated Scalp Trader role).
+- **Filling Mode Auto-Detection:** Automatically negotiates `ORDER_FILLING_IOC` (Immediate-Or-Cancel) $\to$ `ORDER_FILLING_FOK` (Fill-Or-Kill) $\to$ `ORDER_FILLING_RETURN`.
+
+---
+
+### B. Mathematical & Execution Architecture
+
+#### 1. Dynamic Bracket Offsets & Sub-Tick Rate Limiting
+To prevent broker `TRADE_RETCODE_TOO_MANY_REQUESTS` (10027) rejections during high volatility, bracket repositioning is strictly gated by price displacement:
+$$\Delta P_{\text{step}} \ge \text{InpRepositionStepPoints} \times \text{Point}$$
+Dual stop pending levels are positioned dynamically:
+$$P_{\text{buy\_stop}} = P_{\text{ask}} + \delta_{\text{buffer}}$$
+$$P_{\text{sell\_stop}} = P_{\text{bid}} - \delta_{\text{buffer}}$$
+Where:
+$$\delta_{\text{buffer}} = \max\Big(k \cdot \text{ATR}(14)_{\text{M1}},\, \text{StopLevel}_{\text{broker}} + 5\text{ pts},\, \text{InpMinDistancePoints} \times \text{Point}\Big)$$
+
+#### 2. Sub-50ms OCO (One-Cancels-the-Other) Engine (`OnTradeTransaction`)
+Rather than waiting for the next market tick (`OnTick`), the EA hooks directly into MT5's transaction event stream:
+- Upon receiving `TRADE_TRANSACTION_DEAL_ADD` with `DEAL_ENTRY_IN`:
+  1. Computes instantaneous execution slippage:
+     $$\text{Slippage} = \frac{|\text{Price}_{\text{fill}} - \text{Price}_{\text{target}}|}{\text{Point}}$$
+     Logged directly via `PrintFormat()`.
+  2. Immediately issues `trade.OrderDelete()` to wipe the opposing pending order ticket in $< 50\text{ ms}$.
+  3. Transitions state machine to `STATE_IN_TRADE`.
+
+#### 3. Two-Tier Micro-Ratchet Trailing Engine
+- **Tier 1: Guaranteed Breakeven + Buffer Floor:**
+  $$\text{If } \text{GainPoints} \ge \text{InpBETriggerPoints} \implies \text{SL} \leftarrow P_{\text{open}} \pm \text{InpBEBufferPoints} \times \text{Point}$$
+- **Tier 2: Continuous Micro-Ratchet Trail:**
+  $$\text{TargetSL}_{\text{buy}} = P_{\text{bid}} - \text{InpTrailDistancePoints} \times \text{Point}$$
+  $$\text{If } \text{TargetSL} - \text{CurrentSL} \ge \text{InpTrailStepPoints} \times \text{Point} \implies \text{Modify Position SL}$$
+
+#### 4. Risk & Safety Controls
+- **Maximum Spread Filter:** If $\text{Spread} > \text{InpMaxSpreadPoints}$ ($35\text{ pts} / \$0.35$), resting brackets are immediately purged and new brackets are locked.
+- **Post-Exit Cooldown (`STATE_COOLDOWN`):** Enforces a mandatory $15$-second pause post-deal to eliminate whipsaw over-trading.
+
+
 
 
 
