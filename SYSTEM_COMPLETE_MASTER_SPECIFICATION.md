@@ -760,5 +760,57 @@ To deliver a world-class institutional terminal matching Bloomberg and TradingVi
 - **Active Positions Grid:** Real-time tracking of open tickets, Cent Pyramid tranche role (`1001` vs `2002`), current tick price, floating PnL, live 180s grace period countdown bar, danger score (0–100%), and one-click emergency market close.
 - **Trade Journal & Post-Mortem Diagnostics:** Closed trade ledger recording open/close MYT timestamps, technique tag (`SMC_PULLBACK_RETEST`, `CENT_PYRAMID`), realized dollar PnL, and automated AI post-mortem diagnosis explaining why stopped out or validated.
 
+---
+
+## 10. RESTING PENDING LIMIT ORDER ARCHITECTURE & DYNAMIC INVALIDATION ENGINE (OCTOBER 6, 2026)
+
+### A. The "Approved Stream vs. 2 Active Orders in MT5" Dynamic
+A fundamental operational distinction exists between the **Decision Audit Stream** and the **Broker Order Book**:
+1. **Decision Stream (Autonomous Scanning Cadence):**
+   - The dual-trader engine operates an autonomous scouting cycle every **60 seconds**.
+   - As long as high-timeframe trend alignment (H4/H1) and discount equilibrium are sustained, the strategy mind generates a candidate proposal on every cycle.
+   - The Chief Risk Arbiter audits and approves each valid setup, writing an immutable record to the `trading_hypotheses` database ledger.
+2. **Broker Order Book (Cent Pyramiding Deployment):**
+   - Upon initial approval of an institutional swing setup, the **Cent Pyramid Engine** deploys exactly **two concurrent pending limit orders** into MT5:
+     - **Tranche 1 (`CentTranche1`):** Positioned at the primary 50% equilibrium discount price (e.g., `$4,148.34`, 0.20 lots).
+     - **Tranche 2 (`CentTranche2`):** Positioned with a micro-pullback stagger (e.g., `$4,148.04`, 0.20 lots).
+   - This two-order structure prepares the position basket for multi-entry accumulation while honoring the maximum 5-position ceiling.
+
+---
+
+### B. Root Cause of Historical Order Churn & False Invalidation
+Prior to this enhancement, historical logs revealed that orders were placed and cancelled across successive 60-second cycles due to two interacting factors:
+1. **Pullback False Invalidation in `manage_pending_limit_orders`:**
+   - The pending order invalidation engine evaluated 5-minute bars using a naive rule: `if latest_close < recent_low: has_bearish_choch = True`.
+   - When price pulled back from $4,156 toward the buy limit at $4,148, normal retracement candles naturally printed lower lows.
+   - The engine erroneously flagged healthy pullbacks as "Bearish CHoCH," cancelling the resting limit orders seconds before the subsequent cycle placed new ones.
+2. **Missing Resting Order Awareness in Chief Arbiter:**
+   - The Arbiter's Gate 8 checked only active open positions (`mt5.positions_get()`), but omitted resting pending orders (`mt5.orders_get()`).
+   - Consequently, the Arbiter re-evaluated each proposal as if no orders existed, creating redundant deployment instructions.
+
+---
+
+### C. Architectural Safeguards Implemented
+
+#### 1. Resting Pending Limit Deduplication Guard (`arbiter.py`)
+- Gate 8 now explicitly queries `mt5.orders_get(symbol=symbol)`.
+- If an active pending limit order already rests on MT5 within **$1.00** of the candidate entry zone for the same magic number:
+  - Arbiter marks the decision as **`ARMED_HOLDING_LIMIT`**.
+  - Logs: `Active pending order #<ticket> already armed at <price>. Maintaining active order.`
+  - Skips redundant re-deployment, keeping the resting order tickets stable in MT5 without broker spam.
+
+#### 2. Robust Limit Invalidation Mechanics (`mt5_engine.py`)
+- Buy Limit orders are strictly protected during pullbacks above entry price.
+- Orders are **only cancelled** under three verified conditions:
+  1. **Missed Trade:** Price rallied and tagged Take Profit (`latest_close >= order.tp`) without filling the limit.
+  2. **Structural Blowout:** Price broke cleanly below the Stop Loss level (`latest_close <= order.sl`).
+  3. **True HTF Bearish Shift:** A confirmed Bearish CHoCH occurring strictly below the entry price (`latest_close < order.price_open`).
+  4. **TTL Expiration:** Order age $\ge 20$ minutes (1,200 seconds).
+
+#### 3. Dashboard Telemetry Alignment (`index.html`)
+- Hypotheses flagged with `ARMED_HOLDING_LIMIT` display a distinct amber badge: **`⏳ ARMED (LIMIT)`**.
+- Confirms to the user that the system is patiently holding the active limit orders in the broker order book, awaiting price mitigation.
+
+
 
 

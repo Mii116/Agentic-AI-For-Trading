@@ -675,29 +675,35 @@ class MT5ExecutionEngine:
                 should_cancel = True
                 cancel_reason = f"20-Minute TTL Expired ({order_age_sec:.0f}s elapsed)"
 
-            # 2. Active Invalidation: 5m Change of Character (CHoCH) against setup before fill
+            # 2. Active Invalidation: Missed move to TP, or structural blowout below SL
             elif m5_bars and len(m5_bars) >= 8:
                 if order_type == "BUY_LIMIT":
-                    # Pending Buy Limit invalidated if Bearish CHoCH occurs (clean close below recent swing low)
-                    has_bearish_choch = (choch and "BEARISH" in choch.get("type", ""))
-                    if not has_bearish_choch and swing_lows:
-                        recent_low = swing_lows[-1]["price"]
-                        if latest_close < recent_low:
-                            has_bearish_choch = True
-                    if has_bearish_choch:
+                    # Condition A: Missed Trade - price rallied and tagged TP before filling limit
+                    if order.tp > 0 and latest_close >= order.tp:
                         should_cancel = True
-                        cancel_reason = f"Active Invalidation: 5m Bearish CHoCH detected before fill (Close={latest_close:.2f})"
+                        cancel_reason = f"Missed Move: Price reached TP ({order.tp:.2f}) without filling limit"
+                    # Condition B: Structural Blowout - price broke below Stop Loss level
+                    elif order.sl > 0 and latest_close <= order.sl:
+                        should_cancel = True
+                        cancel_reason = f"Structural Invalidation: Price closed below Stop Loss ({order.sl:.2f})"
+                    # Condition C: Bearish CHoCH that occurs strictly below the entry price (not a normal pullback above entry)
+                    elif choch and "BEARISH" in choch.get("type", "") and latest_close < order.price_open:
+                        should_cancel = True
+                        cancel_reason = f"Active Invalidation: 5m Bearish CHoCH below entry level (Close={latest_close:.2f} < Entry={order.price_open:.2f})"
 
                 elif order_type == "SELL_LIMIT":
-                    # Pending Sell Limit invalidated if Bullish CHoCH occurs (clean close above recent swing high)
-                    has_bullish_choch = (choch and "BULLISH" in choch.get("type", ""))
-                    if not has_bullish_choch and swing_highs:
-                        recent_high = swing_highs[-1]["price"]
-                        if latest_close > recent_high:
-                            has_bullish_choch = True
-                    if has_bullish_choch:
+                    # Condition A: Missed Trade - price dropped and tagged TP before filling limit
+                    if order.tp > 0 and latest_close <= order.tp:
                         should_cancel = True
-                        cancel_reason = f"Active Invalidation: 5m Bullish CHoCH detected before fill (Close={latest_close:.2f})"
+                        cancel_reason = f"Missed Move: Price reached TP ({order.tp:.2f}) without filling limit"
+                    # Condition B: Structural Blowout - price broke above Stop Loss level
+                    elif order.sl > 0 and latest_close >= order.sl:
+                        should_cancel = True
+                        cancel_reason = f"Structural Invalidation: Price closed above Stop Loss ({order.sl:.2f})"
+                    # Condition C: Bullish CHoCH that occurs strictly above the entry price
+                    elif choch and "BULLISH" in choch.get("type", "") and latest_close > order.price_open:
+                        should_cancel = True
+                        cancel_reason = f"Active Invalidation: 5m Bullish CHoCH above entry level (Close={latest_close:.2f} > Entry={order.price_open:.2f})"
 
             if should_cancel:
                 logger.warning(

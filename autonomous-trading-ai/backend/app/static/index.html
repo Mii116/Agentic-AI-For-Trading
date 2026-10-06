@@ -1197,8 +1197,13 @@
         const sideChip = item.direction === 'BUY' ? 'chip-buy' : 'chip-sell';
 
         let statusChip = 'chip-approved';
+        let displayStatus = item.status;
         if (item.status === 'EXECUTED') statusChip = 'chip-executed';
         else if (item.status.includes('REJECTED')) statusChip = 'chip-rejected';
+        else if (item.status.includes('ARMED') || item.status.includes('HOLDING')) {
+          statusChip = 'chip-pending';
+          displayStatus = 'ARMED (LIMIT)';
+        }
 
         // Friendly strategy display
         const isSwing = String(item.strategy).toUpperCase().includes('SWING');
@@ -1250,7 +1255,7 @@
                 <span class="chip chip-pending">⏳ Gated</span>
               `}
             </td>
-            <td><span class="chip ${statusChip}">${item.status}</span></td>
+            <td><span class="chip ${statusChip}">${displayStatus}</span></td>
             <td style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               <span style="font-size: 12px; color: #cbd5e1;" title="${item.thesis || ''}">
                 ${item.thesis || 'SMC high-confluence entry evaluation'}

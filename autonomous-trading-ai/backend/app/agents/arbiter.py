@@ -242,6 +242,26 @@ class ChiefRiskArbiter:
                 same_dir_positions = [p for p in same_magic_positions if p.type == target_type]
                 opp_dir_positions = [p for p in same_magic_positions if p.type == opposite_type]
 
+                # Check 0: Avoid churning/duplicating active resting pending limit orders
+                pending_orders = mt5.orders_get(symbol=symbol) or []
+                same_magic_pending = [o for o in pending_orders if o.magic == candidate.magic_number]
+                existing_limit_match = None
+                for po in same_magic_pending:
+                    if abs(po.price_open - candidate.entry_price) <= 1.0:
+                        existing_limit_match = po
+                        break
+
+                if existing_limit_match:
+                    logger.info(
+                        f"[Arbiter] Setup zone at {candidate.entry_price:.2f} already armed with resting pending order "
+                        f"#{existing_limit_match.ticket} ({existing_limit_match.price_open:.2f}). Maintaining active order."
+                    )
+                    self._record_hypothesis_decision(
+                        db, candidate, "ARMED_HOLDING_LIMIT",
+                        f"Active pending order #{existing_limit_match.ticket} already resting at {existing_limit_match.price_open:.2f} on MT5."
+                    )
+                    continue
+
                 # Check 1: Avoid stacked duplicate entries within $2.00 for SAME magic number (unless scale-in or cent mode)
                 if same_dir_positions and not candidate.is_scale_in and not getattr(settings, "CENT_ACCOUNT_MODE", False):
                     last_entry = same_dir_positions[-1].price_open
