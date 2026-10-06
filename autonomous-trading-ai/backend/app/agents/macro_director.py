@@ -73,11 +73,11 @@ class MacroDirector:
             "h1_order_blocks": h1_smc["order_blocks"],
             "allow_long": allow_long_quant,
             "allow_short": allow_short_quant,
-            "analysis_source": "QUANT_SMC"
+            "analysis_source": "100%_LOCAL_QUANT"
         }
 
-        # Attempt to enrich with Gemini if client is available
-        if self.client:
+        # Attempt to enrich with Gemini ONLY if cloud AI is explicitly enabled
+        if settings.ENABLE_CLOUD_AI and self.client:
             ai_verdict = self._query_gemini_director(result, h4_smc, h1_smc)
             if ai_verdict:
                 gemini_regime = ai_verdict.get("regime", quant_regime)

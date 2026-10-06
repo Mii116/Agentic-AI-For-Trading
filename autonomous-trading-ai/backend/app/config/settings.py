@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     
     # AI Engine
+    ENABLE_CLOUD_AI: bool = Field(default=False, env="ENABLE_CLOUD_AI")
     GEMINI_API_KEY: Optional[str] = Field(default=None, env="GEMINI_API_KEY")
     GEMINI_MODEL: str = Field(default="gemini-3.5-flash", env="GEMINI_MODEL")
     

@@ -183,6 +183,13 @@ def emergency_close_all():
     engine.close_all_positions()
     return {"status": "success", "message": "Closed all active MT5 positions."}
 
+@router.post("/reset-cooldowns")
+def reset_cooldowns_endpoint():
+    """Clears all active cooldown timers and debounce zone blacklists."""
+    from app.trading.cooldown_manager import MarketCooldownManager
+    MarketCooldownManager.clear_all()
+    return {"status": "success", "message": "Reset all active cooldowns and debounce blacklists."}
+
 @router.post("/execute-market-order")
 def execute_manual_market_order(req: ManualTradeRequest):
     """

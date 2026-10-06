@@ -1,22 +1,24 @@
 {
   "M5_FVG_LIMIT": {
-    "total_attempts": 21,
-    "successful_trades": 17,
-    "failed_trades": 4,
-    "confidence_score": 0.81,
+    "total_attempts": 47,
+    "successful_trades": 33,
+    "failed_trades": 14,
+    "confidence_score": 0.702,
     "winning_signatures": [
-      "[#390280896] Enter on the first tick-confirmed retest of a fresh M5 FVG (displacement >= 0.8x ATR) during active session overlaps, securing the position with a volatility-adjusted stop loss set at the maximum of structural invalidation or 1.5x ATR.",
-      "[#390280881] Enter scalps exclusively on tick-confirmed retests of fresh M5 FVGs during active session windows, securing risk with a volatility-adjusted stop loss set at the maximum of structural invalidation or 1.5x ATR.",
-      "[#387950563] Execute limit orders at 50% FVG equilibrium during London/NY window with confirmed sweep rejection.",
-      "[#387874190] Enter short positions on the first tick-confirmed retest of a fresh M5 Bearish FVG (displacement >= 0.8x ATR) during high-volume session overlaps, securing immediate micro-scalp exits as order flow shifts.",
-      "[#387686208] Place Sell Limit orders at the 50% equilibrium of an M5 Bearish FVG with a strict 20-minute TTL, setting the Stop Loss just above the FVG high to capture rapid micro-structure order flow rejections."
+      "[#391156411] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
+      "[#391154719] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
+      "[#391152759] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
+      "[#391151211] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
+      "[#391131809] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared."
     ],
     "failure_anti_patterns": [
-      "[#390420385] Avoid executing sweep-reversal entries on micro-timeframe ticks when the higher-timeframe (M5) candle is expanding with strong momentum; always require a confirmed M5 close below the invalidation level to validate the rejection before committing capital.",
-      "Entering M5 FVG during low-volume Asian consolidation without displacement.",
-      "Front-running an unconfirmed sweep directly into higher-timeframe order block supply."
+      "[#391308425] Avoid trading into compression or spread blowout; wait for clean liquidity sweep before executing scalps.",
+      "[#391169935] Confirm H4 200 EMA alignment and verify macroeconomic yield tailwinds prior to swing long entries.",
+      "[#391128438] Confirm H4 200 EMA alignment and verify macroeconomic yield tailwinds prior to swing long entries.",
+      "[#391100139] Confirm H4 200 EMA alignment and verify macroeconomic yield tailwinds prior to swing long entries.",
+      "[#391045934] Confirm H4 200 EMA alignment and verify macroeconomic yield tailwinds prior to swing long entries."
     ],
-    "last_updated": "2026-10-06T11:45:05.513532+00:00"
+    "last_updated": "2026-10-06T15:35:02.298098+00:00"
   },
   "M1_SWEEP_RETEST": {
     "total_attempts": 8,
@@ -33,16 +35,16 @@
     "last_updated": "2026-10-02T15:39:10.777581+00:00"
   },
   "H1_PULLBACK_LIMIT": {
-    "total_attempts": 105,
-    "successful_trades": 85,
+    "total_attempts": 106,
+    "successful_trades": 86,
     "failed_trades": 20,
-    "confidence_score": 0.81,
+    "confidence_score": 0.811,
     "winning_signatures": [
+      "[#388126308] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
       "[#390287239] When scaling into an established institutional SMC trend, execute secondary entries only upon H1 structural mitigation of demand zones, ensuring the stop loss remains anchored below the primary H4 swing low.",
       "[#390287239] When scaling into an established H4 bullish structural flow, execute secondary limit orders only upon a confirmed M30 market structure shift (MSS) at the 50% equilibrium of the local dealing range, maintaining a structural stop below the swing low.",
       "[#390285029] Execute scale-in positions exclusively in the direction of the H4 structural flow after a clear M30 liquidity sweep and mitigation of a high-probability Fair Value Gap (FVG), maintaining risk parameters anchored to the primary structural invalidation level.",
-      "[#390285029] When scaling into an established H4 structural trend, execute secondary entries (Scale-In) only after a 30m market structure shift (MSS) aligns with the primary HTF order block, securing the stop-loss below the newly formed swing low.",
-      "[#390284054] Scale into established H4/H1 structural trends only after a 30m liquidity sweep mitigates a premium/discount demand level, keeping risk tightly defined below the local structural invalidation point."
+      "[#390285029] When scaling into an established H4 structural trend, execute secondary entries (Scale-In) only after a 30m market structure shift (MSS) aligns with the primary HTF order block, securing the stop-loss below the newly formed swing low."
     ],
     "failure_anti_patterns": [
       "[#390423752] Do not execute scale-in orders on lower timeframes (30m) when the higher timeframe (H4) structural flow is in an unmitigated premium expansion phase, particularly within 24 hours of a weekend market close.",
@@ -51,24 +53,26 @@
       "[#387495786] Do not scale into an institutional short position during an active H4/H1 expansion phase until a clear liquidity sweep of the major swing high has occurred and a sub-interval market structure shift is confirmed.",
       "[#387495644] Never scale into an existing structural thesis using mid-range limit orders or unconfirmed mitigations; scale-ins must require a completed liquidity sweep and a confirmed lower-timeframe market structure shift to avoid compounding losses at the invalidation level."
     ],
-    "last_updated": "2026-10-06T12:07:32.668984+00:00"
+    "last_updated": "2026-10-06T13:33:33.588931+00:00"
   },
   "SWING_M30_BOS_LIMIT": {
-    "total_attempts": 16,
-    "successful_trades": 12,
-    "failed_trades": 4,
-    "confidence_score": 0.75,
+    "total_attempts": 19,
+    "successful_trades": 14,
+    "failed_trades": 5,
+    "confidence_score": 0.737,
     "winning_signatures": [
+      "[#390965916] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
+      "[#390965907] Patience at H1/30m structural key zones with Alpha Vantage US 10Y Yield check cleared.",
       "[#390270659] Place Buy Limit orders at the 50% equilibrium of an M30 Break of Structure (BOS) when aligned with HTF structural flow, maintaining a strict risk-to-reward profile of at least 3:1.",
       "[#390270659] Place Buy Limit orders at the 50% equilibrium of an M30 Break of Structure (BOS) when aligned with H4/H1 structural flow, securing high-probability entries with structural invalidation below the swing low.",
-      "[#390268920] Execute buy limit orders at the 50% equilibrium discount zone of an M30 Break of Structure (BOS) when aligned with H4/H1 structural flow, securing risk below the swing low for high-probability swing continuations.",
-      "Clear M30 Break of Structure in direction of D1/H4 flow, Alpha Vantage 10Y Yield check passed."
+      "[#390268920] Execute buy limit orders at the 50% equilibrium discount zone of an M30 Break of Structure (BOS) when aligned with H4/H1 structural flow, securing risk below the swing low for high-probability swing continuations."
     ],
     "failure_anti_patterns": [
+      "[#390902760] Cross-check US 10-Year Treasury Yield and DXY momentum before holding swing exposure through session opens.",
       "[#390600748] Do not mix macro swing execution with micro-timeframe exit triggers; executing a swing trade requires giving the position room to breathe within its structural boundaries rather than panic-exiting on minor lower-timeframe structural shifts.",
       "Entering swing buy when 10Y Treasury Yield is accelerating upward with Bullish DXY."
     ],
-    "last_updated": "2026-10-06T12:35:05.591542+00:00"
+    "last_updated": "2026-10-06T14:23:29.385409+00:00"
   },
   "LOW_CONF_TEST": {
     "total_attempts": 10,

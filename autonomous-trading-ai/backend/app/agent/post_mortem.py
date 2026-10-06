@@ -96,8 +96,8 @@ class PostMortemEngine:
             db.close()
 
     def _generate_ai_critique(self, trade: TradeJournal, bars_summary: Optional[str], is_win: bool = False) -> Dict[str, str]:
-        """Queries Gemini for dual-sided reflection with specialized trader analysis."""
-        if not self.client:
+        """Queries Gemini for dual-sided reflection with specialized trader analysis, or executes instant local heuristic."""
+        if not settings.ENABLE_CLOUD_AI or not self.client:
             return self._heuristic_fallback(trade, is_win=is_win)
 
         magic = trade.magic_number or 1001

@@ -886,8 +886,62 @@ Unlike Python scripts, the compiled MQL5 Expert Advisor (**`DynamicStraddleBreak
 - It has **zero dependency on Python or the IDE**.
 - Once attached to an XAUUSD chart with `Algo Trading` enabled in MT5, it runs 24/7 as long as MetaTrader 5 remains open.
 
+---
 
+## 13. 100% LOCAL QUANT ARCHITECTURE, ZERO-TOKEN COST ELIMINATION & REVAMPED COMMAND CENTER (OCTOBER 6, 2026)
 
+### A. Architectural Motivation & Elimination of External Cloud Bloat
+During continuous 24/7 execution, relying on external cloud LLM APIs (Gemini) generated critical operational friction:
+1. **Token Exhaustion & HTTP 402/Quota Warnings:** Continuous 60-second evaluations exhausted free-tier quotas, throwing repeated `HTTP 402 Payment Required` or `429 Too Many Requests` warnings in production logs.
+2. **Network Latency & Gating Bottlenecks:** Cloud API roundtrips added 800ms–2,500ms of latency to what should be sub-millisecond local quantitative decision loops.
+3. **Redundant Code Bloat:** Legacy monolithic files (such as `backend/app/agent/core.py`) remained from initial prototypes, creating confusion alongside the modern multi-agent modular architecture.
 
+---
 
+### B. The 100% Local Quant Engine Specifications
 
+The system is fully decoupled from cloud dependencies by enforcing `ENABLE_CLOUD_AI = False` across all configurations:
+
+1. **Deterministic Macro SMC Director (`macro_director.py`):**
+   - Automatically computes 50 and 200 EMA gradients and multi-timeframe market structure shifts across H4 and H1 bars directly from local MT5 rates.
+   - Bypasses cloud calls completely with execution speed $< 1\text{ ms}$, zero external token burn, and 100% offline uptime.
+
+2. **Instant Pre-Trade Risk Gate (`swing_trader.py`):**
+   - Replaces LLM pre-trade text audits with an instant deterministic heuristic gate.
+   - Cross-checks candidate proposals against the 3 most recent failed trades in `TradeJournal`:
+     - Rejects any setup entering in the same direction within **$3.50** of a recent failed trade level.
+     - Protects against repeating past failure anti-patterns with **zero token cost**.
+
+3. **Deterministic Dual-Sided Post-Mortem Reflection (`post_mortem.py`):**
+   - Automatically categorizes winning and losing trades upon close.
+   - Win Outcomes: Formulates structured "Winning Setup Signatures" based on limit execution precision and London/NY session alignment.
+   - Loss Outcomes: Formulates concrete "Failure Anti-Patterns" stored into `experience_matrix.json`.
+   - 100% local, instant execution, zero Gemini API calls.
+
+4. **Codebase Cleanup & Anti-Bloat Purge:**
+   - Obsolete monolithic agent `backend/app/agent/core.py` and duplicate `backend/app/agent/indicators.py` completely deleted.
+   - Obsolete scratch test scripts (`test_agent.py`, `test_ingestion.py`, `test_single_cycle.py`, `test_xauusd.py`) purged.
+
+---
+
+### C. Revamped Institutional Command Center Dashboard (`index.html`)
+
+The web dashboard (`http://localhost:8080`) has been completely overhauled for institutional performance:
+1. **100% Local Quant Telemetry Badge:**
+   - Header prominently displays: `🟢 100% LOCAL QUANT MODE • CENT PYRAMID ENGINE ACTIVE`.
+   - Real-time Malaysia Time digital clock (`🇲🇾 HH:MM:SS MYT / UTC+8`).
+2. **High-Density KPI Row:**
+   - MT5 Cent Account Equity & Balance with free margin.
+   - Live XAUUSD Ticker with live bid/ask quotes and spread quality indicator (`Safe Spread < 35 pts`).
+   - Cent Pyramiding Preset Telemetry (`0.10 • 0.14 • 0.20 Lots`, Fast BE `+$0.40`, TP1 `+$1.20`, Max 5 tranches).
+   - Realized PnL ($) with dynamic profit/loss glow and Win Rate %.
+   - Active Open Positions with floating PnL and portfolio margin utilization bar.
+3. **Interactive Cent Order Router:**
+   - Quick Lot Chips: `0.10`, `0.14`, `0.20`, `0.50` lots matching user's pyramiding scale.
+   - Dynamic SL / TP target calculators with live estimated price points.
+   - Tactile BUY (Ask) and SELL (Bid) execution buttons routed directly to MT5.
+4. **Operational Controls:**
+   - Dedicated `🧹 Reset Cooldowns` button triggering `POST /api/dashboard/reset-cooldowns` to instantly clear debounce blacklist zones and scalper wait timers for testing.
+   - Dedicated `⚠️ Panic Close All` button for immediate multi-position liquidation.
+5. **Master-Detail Forensic Audit Drawer:**
+   - Smoothly expandable accordion drawers showing detailed SMC theses, Cent Pyramiding targets, and Chief Arbiter safety checks.

@@ -176,3 +176,11 @@ class MarketCooldownManager:
                 "magic_number": z.get("magic_number")
             })
         return active
+
+    @classmethod
+    def clear_all(cls):
+        """Clears in-memory debounce blacklists and resets exit timer."""
+        cls._in_memory_blacklists.clear()
+        cls._last_market_exit_time = 0.0
+        cls._last_exit_details = None
+        logger.info("[COOLDOWN MANAGER] Cleared all active cooldowns and debounce blacklists.")

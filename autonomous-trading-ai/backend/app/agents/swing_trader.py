@@ -89,7 +89,7 @@ class SwingTrader:
                 f"  - Trigger: {f['danger_trigger']}\n"
             )
 
-        if self.client:
+        if settings.ENABLE_CLOUD_AI and self.client:
             prompt = f"""
             You are the Lead Quantitative Risk Auditor reviewing a proposed trade setup for SWING TRADER (Magic: {self.MAGIC_NUMBER}).
             

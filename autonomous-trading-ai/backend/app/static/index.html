@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous Trading AI - Institutional Command Terminal</title>
+  <title>Apex Quant AI - Institutional Gold Terminal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-base: #060912;
-      --bg-surface: #0a0f1d;
-      --bg-card: rgba(13, 20, 36, 0.78);
-      --bg-card-hover: rgba(18, 28, 50, 0.92);
-      --bg-card-sub: rgba(9, 14, 26, 0.85);
+      --bg-base: #05070e;
+      --bg-surface: #0a0e1a;
+      --bg-card: rgba(13, 19, 35, 0.76);
+      --bg-card-hover: rgba(18, 27, 49, 0.92);
+      --bg-card-sub: rgba(9, 13, 24, 0.88);
       --border: rgba(255, 255, 255, 0.08);
       --border-light: rgba(255, 255, 255, 0.04);
       --border-accent: rgba(56, 189, 248, 0.35);
@@ -21,13 +21,14 @@
       --text-muted: #94a3b8;
       --text-dim: #64748b;
       --accent-gold: #f59e0b;
-      --accent-gold-glow: rgba(245, 158, 11, 0.25);
+      --accent-gold-glow: rgba(245, 158, 11, 0.28);
       --accent-blue: #38bdf8;
-      --accent-purple: #a855f7;
+      --accent-blue-glow: rgba(56, 189, 248, 0.25);
+      --accent-purple: #c084fc;
       --pass-green: #10b981;
       --pass-green-glow: rgba(16, 185, 129, 0.25);
       --fail-red: #f43f5e;
-      --fail-red-glow: rgba(244, 63, 94, 0.25);
+      --fail-red-glow: rgba(244, 63, 94, 0.28);
       --warning-amber: #fbbf24;
     }
 
@@ -37,16 +38,16 @@
       background-color: var(--bg-base);
       color: var(--text-main);
       min-height: 100vh;
-      padding: 18px 24px 36px;
+      padding: 16px 22px 36px;
       background-image: 
-        radial-gradient(circle at 10% 8%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 90% 12%, rgba(245, 158, 11, 0.06) 0%, transparent 45%),
-        radial-gradient(circle at 50% 80%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
+        radial-gradient(circle at 10% 6%, rgba(56, 189, 248, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 92% 10%, rgba(245, 158, 11, 0.06) 0%, transparent 42%),
+        radial-gradient(circle at 50% 85%, rgba(192, 132, 252, 0.04) 0%, transparent 50%);
       background-attachment: fixed;
       -webkit-font-smoothing: antialiased;
     }
 
-    .container { max-width: 1600px; margin: 0 auto; }
+    .container { max-width: 1640px; margin: 0 auto; }
 
     /* Top Bar Header */
     header {
@@ -55,9 +56,9 @@
       align-items: center;
       padding-bottom: 16px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
-      gap: 16px;
+      gap: 14px;
     }
     .brand-group { display: flex; align-items: center; gap: 14px; }
     .brand-badge {
@@ -70,10 +71,11 @@
       letter-spacing: 0.8px;
       box-shadow: 0 0 16px var(--accent-gold-glow);
     }
-    .brand-title { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; color: #fff; }
+    .brand-title { font-size: 21px; font-weight: 800; letter-spacing: -0.4px; color: #fff; }
     .brand-subtitle { font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
 
     .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    
     .clock-badge {
       display: flex;
       align-items: center;
@@ -87,6 +89,7 @@
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
     }
+    
     .status-badge {
       display: flex;
       align-items: center;
@@ -98,7 +101,8 @@
       color: var(--pass-green);
       border-radius: 20px;
       font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.3px;
     }
     .pulse-dot {
       width: 8px; height: 8px; background: var(--pass-green); border-radius: 50%;
@@ -111,7 +115,7 @@
       font-family: 'Outfit', sans-serif;
       font-weight: 600;
       font-size: 13px;
-      padding: 8px 16px;
+      padding: 8px 15px;
       border-radius: 8px;
       cursor: pointer;
       border: none;
@@ -120,16 +124,18 @@
       align-items: center;
       gap: 6px;
     }
-    .btn:active { transform: scale(0.98); }
+    .btn:active { transform: scale(0.97); }
     .btn-secondary { background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border); }
     .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.18); }
+    .btn-reset { background: rgba(192, 132, 252, 0.10); color: #d8b4fe; border: 1px solid rgba(192, 132, 252, 0.28); }
+    .btn-reset:hover { background: rgba(192, 132, 252, 0.20); color: #fff; }
     .btn-danger { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
     .btn-danger:hover { background: #f43f5e; color: #fff; box-shadow: 0 0 16px var(--fail-red-glow); }
 
     /* Top KPI Row */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 14px;
       margin-bottom: 20px;
     }
@@ -138,7 +144,7 @@
       backdrop-filter: blur(14px);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 16px 18px;
+      padding: 15px 18px;
       position: relative;
       overflow: hidden;
       transition: transform 0.2s ease, border-color 0.2s ease;
@@ -159,17 +165,17 @@
     .kpi-card.purple::before { background: linear-gradient(90deg, var(--accent-purple), transparent); }
 
     .kpi-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
-    .kpi-val { font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin: 6px 0 3px; letter-spacing: -0.5px; }
+    .kpi-val { font-size: 24px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin: 5px 0 3px; letter-spacing: -0.5px; }
     .kpi-sub { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
 
     /* Main Workspace Layout (Chart + Execution Panel) */
     .workspace-grid {
       display: grid;
-      grid-template-columns: 2.1fr 1fr;
+      grid-template-columns: 2.15fr 1fr;
       gap: 18px;
       margin-bottom: 22px;
     }
-    @media (max-width: 1200px) {
+    @media (max-width: 1240px) {
       .workspace-grid { grid-template-columns: 1fr; }
     }
 
@@ -193,7 +199,7 @@
       background: rgba(255, 255, 255, 0.02);
     }
     .panel-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: #fff; }
-    .chart-container { flex: 1; width: 100%; height: 100%; background: #070a13; }
+    .chart-container { flex: 1; width: 100%; height: 100%; background: #060913; }
 
     /* Trade Control Panel */
     .trade-panel {
@@ -245,7 +251,7 @@
     .lot-chip {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border);
-      padding: 6px 0;
+      padding: 7px 0;
       text-align: center;
       border-radius: 6px;
       font-size: 12px;
@@ -259,6 +265,7 @@
       background: rgba(56, 189, 248, 0.16);
       border-color: var(--accent-blue);
       color: var(--accent-blue);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
     }
     .input-box {
       width: 100%;
@@ -281,7 +288,7 @@
       margin-bottom: 14px;
     }
     .target-box {
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.35);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 9px;
@@ -299,72 +306,87 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
-      height: 54px;
+      padding: 14px 10px;
       border-radius: 10px;
-      cursor: pointer;
       border: none;
-      transition: all 0.2s ease;
+      cursor: pointer;
+      transition: all 0.18s ease;
     }
     .exec-btn:active { transform: scale(0.98); }
     .btn-buy {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: #fff;
-      box-shadow: 0 0 16px var(--pass-green-glow);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(16, 185, 129, 0.08));
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
     }
-    .btn-buy:hover { filter: brightness(1.12); }
+    .btn-buy:hover {
+      background: var(--pass-green);
+      color: #000;
+      box-shadow: 0 0 20px var(--pass-green-glow);
+    }
     .btn-sell {
-      background: linear-gradient(135deg, #f43f5e, #e11d48);
-      color: #fff;
-      box-shadow: 0 0 16px var(--fail-red-glow);
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.18), rgba(244, 63, 94, 0.08));
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #fb7185;
     }
-    .btn-sell:hover { filter: brightness(1.12); }
-    .exec-btn-label { font-size: 13px; font-weight: 800; }
-    .exec-btn-price { font-size: 11px; font-family: 'JetBrains Mono', monospace; opacity: 0.92; font-weight: 600; }
+    .btn-sell:hover {
+      background: var(--fail-red);
+      color: #fff;
+      box-shadow: 0 0 20px var(--fail-red-glow);
+    }
+    .exec-btn-label { font-size: 14px; font-weight: 800; }
+    .exec-btn-price { font-size: 13px; font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-top: 3px; }
 
-    /* Tabs Navigation */
+    /* Navigation Tabs */
     .tabs-nav {
       display: flex;
       gap: 8px;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
       margin-bottom: 16px;
-      flex-wrap: wrap;
+      overflow-x: auto;
+      padding-bottom: 4px;
     }
     .tab-btn {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border);
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
+      background: transparent;
+      border: none;
       color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 8px 8px 0 0;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
       transition: all 0.18s ease;
+      white-space: nowrap;
+      position: relative;
     }
-    .tab-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .tab-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.03); }
     .tab-btn.active {
-      background: rgba(56, 189, 248, 0.12);
-      border-color: rgba(56, 189, 248, 0.4);
       color: var(--accent-blue);
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+      background: rgba(56, 189, 248, 0.08);
+      border-bottom: 2px solid var(--accent-blue);
     }
     .badge-count {
-      background: rgba(255, 255, 255, 0.09);
-      padding: 1px 7px;
-      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
       font-size: 11px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 10px;
       font-family: 'JetBrains Mono', monospace;
     }
+    .tab-btn.active .badge-count {
+      background: var(--accent-blue);
+      color: #000;
+    }
 
+    /* Tab Content Panes */
     .tab-content { display: none; }
     .tab-content.active { display: block; animation: fadeIn 0.2s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* High-Density Institutional Table Styles */
+    /* High-Density Data Tables */
     .table-card {
       background: var(--bg-card);
       backdrop-filter: blur(14px);
@@ -378,82 +400,56 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(255, 255, 255, 0.015);
+      background: rgba(255, 255, 255, 0.02);
+      flex-wrap: wrap;
+      gap: 8px;
     }
-    .table-title { font-size: 13px; font-weight: 800; color: #fff; letter-spacing: -0.2px; }
+    .table-title { font-size: 13px; font-weight: 800; letter-spacing: 0.3px; color: #fff; }
     .table-responsive { width: 100%; overflow-x: auto; }
-
-    table.dense-grid {
+    
+    .dense-grid {
       width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
+      border-collapse: collapse;
+      font-size: 12px;
       text-align: left;
-      table-layout: fixed;
     }
-    table.dense-grid th {
-      background: #090e1c;
+    .dense-grid th {
+      background: rgba(0, 0, 0, 0.35);
       color: var(--text-muted);
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
       padding: 10px 14px;
       border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
-    table.dense-grid td {
+    .dense-grid td {
       padding: 10px 14px;
-      font-size: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid var(--border-light);
       vertical-align: middle;
-      height: 48px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
-    table.dense-grid tbody tr.main-row {
-      background: rgba(255, 255, 255, 0.01);
-      transition: background 0.15s ease;
+    .dense-grid tr.main-row {
       cursor: pointer;
+      transition: background 0.15s ease;
     }
-    table.dense-grid tbody tr.main-row:nth-child(4n+1) {
-      background: rgba(255, 255, 255, 0.025);
-    }
-    table.dense-grid tbody tr.main-row:hover {
-      background: rgba(56, 189, 248, 0.05);
-    }
-    table.dense-grid tbody tr.main-row.expanded {
-      background: rgba(56, 189, 248, 0.08);
-      border-left: 3px solid var(--accent-blue);
-    }
+    .dense-grid tr.main-row:hover { background: rgba(255, 255, 255, 0.035); }
+    .dense-grid tr.main-row.expanded { background: rgba(56, 189, 248, 0.04); }
 
     /* Expandable Inspection Drawer */
-    tr.drawer-row {
-      display: none;
-      background: #080d1a !important;
-    }
-    tr.drawer-row.open {
-      display: table-row;
-    }
-    tr.drawer-row td {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border-accent);
-      height: auto;
-      white-space: normal;
-      overflow: visible;
+    .drawer-row { display: none; }
+    .drawer-row.open { display: table-row; }
+    .drawer-row td {
+      background: var(--bg-card-sub);
+      padding: 14px 18px !important;
+      border-bottom: 1px solid var(--border);
     }
     .drawer-grid {
       display: grid;
-      grid-template-columns: 1.5fr 1.2fr 1fr;
-      gap: 16px;
-    }
-    @media (max-width: 1100px) {
-      .drawer-grid { grid-template-columns: 1fr; }
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
     }
     .drawer-box {
-      background: rgba(14, 21, 38, 0.85);
+      background: rgba(0, 0, 0, 0.35);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 12px 14px;
@@ -461,15 +457,15 @@
     .drawer-box-title {
       font-size: 11px;
       font-weight: 700;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    /* Badges & Micro Chips */
+    /* Badges & Chips */
     .chip {
       display: inline-flex;
       align-items: center;
@@ -479,21 +475,20 @@
       font-size: 11px;
       font-weight: 700;
       font-family: 'JetBrains Mono', monospace;
-      white-space: nowrap;
     }
     .chip-buy { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
     .chip-sell { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
-    .chip-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
-    .chip-executed { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.35); }
-    .chip-rejected { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.28); }
-    .chip-pending { background: rgba(245, 158, 11, 0.12); color: var(--accent-gold); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .chip-approved { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .chip-rejected { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+    .chip-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .chip-executed { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
 
     .audit-btn {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
-      color: var(--accent-blue);
-      padding: 3px 8px;
-      border-radius: 5px;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
@@ -548,10 +543,10 @@
     <!-- Top Bar Header -->
     <header>
       <div class="brand-group">
-        <span class="brand-badge">APEX PRO</span>
+        <span class="brand-badge">APEX QUANT</span>
         <div>
           <h1 class="brand-title">Autonomous Trading AI Command Center</h1>
-          <div class="brand-subtitle">Dual-Trader SMC Architecture • Cent Pyramid Engine • Live Telemetry</div>
+          <div class="brand-subtitle">100% Local Quant Mode • Cent Pyramiding (0.10 - 0.20 Lots) • Zero Cloud API Cost</div>
         </div>
       </div>
       <div class="header-controls">
@@ -561,10 +556,13 @@
         </div>
         <div class="status-badge">
           <div class="pulse-dot"></div>
-          <span id="system-status-text">Streaming Live (1.5s)</span>
+          <span id="system-status-text">100% LOCAL QUANT ACTIVE (1.5s)</span>
         </div>
         <button class="btn btn-secondary" onclick="fetchLiveTelemetry()">
           🔄 Refresh
+        </button>
+        <button class="btn btn-reset" onclick="resetCooldowns()">
+          🧹 Reset Cooldowns
         </button>
         <button class="btn btn-danger" onclick="emergencyCloseAll()">
           ⚠️ Panic Close All
@@ -576,10 +574,10 @@
     <div class="kpi-grid">
       <!-- 1. Equity & Balance -->
       <div class="kpi-card green">
-        <div class="kpi-label">Account Equity (MT5)</div>
+        <div class="kpi-label">Account Equity (MT5 Cent)</div>
         <div class="kpi-val" id="val-equity">$--</div>
         <div class="kpi-sub">
-          <span id="val-balance">Balance: $--</span> • <span id="val-free-margin">Margin Free: $--</span>
+          <span id="val-balance">Balance: $--</span> • <span id="val-free-margin">Free: $--</span>
         </div>
       </div>
 
@@ -594,10 +592,10 @@
 
       <!-- 3. Cent Pyramid Engine -->
       <div class="kpi-card purple">
-        <div class="kpi-label">Cent Pyramid Engine</div>
-        <div class="kpi-val" style="font-size: 20px; color: #c084fc;">0.10 - 0.20 Lots</div>
+        <div class="kpi-label">Cent Pyramid Sizing</div>
+        <div class="kpi-val" style="font-size: 21px; color: #c084fc;">0.10 • 0.14 • 0.20</div>
         <div class="kpi-sub">
-          <span>Fast BE: +$0.40</span> • <span>TP1: +$1.20</span> • <span>Max: 5 Tranches</span>
+          <span>Fast BE: +$0.40</span> • <span>TP1: +$1.20</span> • <span>Max: 5</span>
         </div>
       </div>
 
@@ -610,12 +608,12 @@
         </div>
       </div>
 
-      <!-- 5. Active Positions -->
+      <!-- 5. Active Positions & Risk -->
       <div class="kpi-card">
-        <div class="kpi-label">Open Positions & Sentry</div>
+        <div class="kpi-label">Active Positions & Sentry</div>
         <div class="kpi-val" id="val-open-count" style="color: var(--accent-blue);">0 Active</div>
         <div class="kpi-sub">
-          <span id="val-floating-pnl">Floating: $0.00</span> • <span id="val-margin-util">Margin Util: 0.0%</span>
+          <span id="val-floating-pnl">Floating: $0.00</span> • <span id="val-margin-util">Margin: 0.0%</span>
         </div>
       </div>
     </div>
@@ -627,10 +625,10 @@
         <div class="panel-header">
           <div class="panel-title">
             <span>📈</span>
-            <span>XAUUSD Gold Real-Time Candlestick Chart (TradingView • Asia/Kuala_Lumpur)</span>
+            <span>XAUUSD Gold Live Candlestick (TradingView • Asia/Kuala_Lumpur)</span>
           </div>
           <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
-            Interval: 5m • High-Frequency Feed
+            Interval: 5m • Institutional Feed
           </div>
         </div>
         <div class="chart-container" id="chart-wrapper">
@@ -652,11 +650,11 @@
           <div class="field-group">
             <div class="field-label">
               <span>Lot Size (Volume)</span>
-              <span id="lot-mode-hint" style="color: #c084fc;">Cent Tranche Sizing</span>
+              <span id="lot-mode-hint" style="color: #c084fc;">Cent Pyramid Presets</span>
             </div>
             <div class="lot-selector-grid">
-              <div class="lot-chip" onclick="selectLot(0.01)">0.01</div>
               <div class="lot-chip active" onclick="selectLot(0.10)">0.10</div>
+              <div class="lot-chip" onclick="selectLot(0.14)">0.14</div>
               <div class="lot-chip" onclick="selectLot(0.20)">0.20</div>
               <div class="lot-chip" onclick="selectLot(0.50)">0.50</div>
             </div>
@@ -669,12 +667,12 @@
               <div class="target-box">
                 <div class="target-box-title">SL Distance ($)</div>
                 <input type="number" id="trade-sl-dist" class="input-box" style="margin-top: 4px; padding: 6px 8px; font-size: 12px;" value="2.50" step="0.50" oninput="updateTargets()">
-                <div id="est-sl-price" style="font-size: 11px; color: var(--fail-red); font-family: 'JetBrains Mono', monospace; margin-top: 3px;">SL: Est. --</div>
+                <div id="est-sl-price" style="font-size: 11px; color: var(--fail-red); font-family: 'JetBrains Mono', monospace; margin-top: 3px;">Buy SL: Est. --</div>
               </div>
               <div class="target-box">
                 <div class="target-box-title">TP Distance ($)</div>
                 <input type="number" id="trade-tp-dist" class="input-box" style="margin-top: 4px; padding: 6px 8px; font-size: 12px;" value="5.00" step="0.50" oninput="updateTargets()">
-                <div id="est-tp-price" style="font-size: 11px; color: var(--pass-green); font-family: 'JetBrains Mono', monospace; margin-top: 3px;">TP: Est. --</div>
+                <div id="est-tp-price" style="font-size: 11px; color: var(--pass-green); font-family: 'JetBrains Mono', monospace; margin-top: 3px;">Buy TP: Est. --</div>
               </div>
             </div>
           </div>
@@ -693,7 +691,7 @@
             </button>
           </div>
           <div style="font-size: 11px; color: var(--text-dim); text-align: center;">
-            Direct execution on MT5 broker terminal with institutional SL/TP policy.
+            Direct execution on MT5 terminal with fast breakeven and danger sentry guard.
           </div>
         </div>
       </div>
@@ -710,20 +708,20 @@
         <span class="badge-count" id="positions-count">0</span>
       </button>
       <button class="tab-btn" onclick="switchTab('telemetry')">
-        <span>🧠 Agent Minds Telemetry</span>
+        <span>🧠 Local Quant Minds Telemetry</span>
       </button>
       <button class="tab-btn" onclick="switchTab('journal')">
-        <span>📜 Trade Journal & AI Post-Mortem</span>
+        <span>📜 Trade Journal & Local Post-Mortem</span>
       </button>
     </div>
 
-    <!-- TAB 1: DECISION PIPELINE & AUDIT STREAM (Redesigned High-Density Grid) -->
+    <!-- TAB 1: DECISION PIPELINE & AUDIT STREAM -->
     <div id="tab-pipeline" class="tab-content active">
       <div class="table-card">
         <div class="table-header">
-          <div class="table-title">AGENT DECISION PIPELINE & SIGNAL AUDIT STREAM</div>
+          <div class="table-title">LOCAL QUANT DECISION PIPELINE & SIGNAL AUDIT STREAM</div>
           <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
-            All timestamps locked to Malaysia Time (MYT / UTC+8) • Click any row for deep forensic audit
+            Timestamps in Malaysia Time (MYT / UTC+8) • Click any row for deep forensic audit
           </div>
         </div>
         <div class="table-responsive">
@@ -792,14 +790,14 @@
         <!-- Card 1: Macro Director -->
         <div class="table-card" style="padding: 18px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 800; font-size: 14px;">Macro Director</span>
+            <span style="font-weight: 800; font-size: 14px;">Macro Director (100% Local Quant)</span>
             <span class="chip chip-approved" id="macro-regime-chip">BULLISH</span>
           </div>
           <div style="display: flex; flex-direction: column; gap: 9px; font-size: 12px;">
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">US 10Y Yield</span><span id="macro-yield" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">--</span></div>
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">US Dollar Index (DXY)</span><span id="macro-dxy" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">--</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">H4/H1 EMA Structure</span><span id="macro-yield" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">Quant SMC</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Dollar & Macro Flow</span><span id="macro-dxy" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">NEUTRAL</span></div>
             <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Direction Permissions</span><span id="macro-permissions" style="font-weight: 600;">Long: OK | Short: OK</span></div>
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Data Source</span><span>Alpha Vantage Worker Cache</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Latency & Token Burn</span><span style="color: var(--pass-green); font-weight: 700;">0ms • $0.00 Tokens</span></div>
           </div>
         </div>
 
@@ -811,7 +809,7 @@
           </div>
           <div style="display: flex; flex-direction: column; gap: 9px; font-size: 12px;">
             <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Timeframe Stack</span><span>D1 Trend • H1 Zones • M30 BOS</span></div>
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Pyramiding Strategy</span><span>Cent Multi-Tranche Scaling</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Cent Pyramiding</span><span>Multi-Tranche Scaling (0.10 - 0.20)</span></div>
             <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Failure Anti-Patterns</span><span id="swing-anti-count">0 Loaded</span></div>
           </div>
         </div>
@@ -819,11 +817,11 @@
         <!-- Card 3: Scalp Trader -->
         <div class="table-card" style="padding: 18px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 800; font-size: 14px;">Scalp Trader (Magic 2002)</span>
+            <span style="font-weight: 800; font-size: 14px;">Scalp Sniper (Magic 2002)</span>
             <span class="chip" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">0.5% Risk</span>
           </div>
           <div style="display: flex; flex-direction: column; gap: 9px; font-size: 12px;">
-            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Volatility Window</span><span id="scalp-session-text">London / NY Active</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Session Window</span><span id="scalp-session-text">London / NY Active</span></div>
             <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">15-Min Exit Cooldown</span><span id="scalp-cooldown-text" class="chip chip-approved">Ready (0.0m)</span></div>
             <div style="display: flex; justify-content: space-between;"><span style="color: var(--text-muted);">Failure Anti-Patterns</span><span id="scalp-anti-count">0 Loaded</span></div>
           </div>
@@ -848,9 +846,9 @@
     <div id="tab-journal" class="tab-content">
       <div class="table-card">
         <div class="table-header">
-          <div class="table-title">CLOSED TRADE JOURNAL & DUAL-SIDED AI POST-MORTEM</div>
+          <div class="table-title">CLOSED TRADE JOURNAL & LOCAL POST-MORTEM REFLECTION</div>
           <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
-            All timestamps formatted in Malaysia Time (MYT / UTC+8)
+            Timestamps formatted in Malaysia Time (MYT / UTC+8) • 100% Deterministic Learning
           </div>
         </div>
         <div class="table-responsive">
@@ -863,7 +861,7 @@
                 <th style="width: 90px;">Volume</th>
                 <th style="width: 90px;">Outcome</th>
                 <th style="width: 110px;">Realized PnL</th>
-                <th>AI Post-Mortem Diagnosis & Learning</th>
+                <th>Local Post-Mortem Diagnosis & Learning</th>
               </tr>
             </thead>
             <tbody id="journal-tbody">
@@ -912,7 +910,6 @@
       try {
         const d = new Date(dateInput);
         if (isNaN(d.getTime())) {
-          // If already string like "2026-10-06 21:49:24 MYT", extract time
           const parts = String(dateInput).split(' ');
           if (parts.length >= 2) return parts[1];
           return String(dateInput);
@@ -980,7 +977,7 @@
         "hide_legend": false,
         "save_image": false,
         "container_id": "tradingview_xauusd",
-        "backgroundColor": "#070a13",
+        "backgroundColor": "#060913",
         "gridColor": "rgba(255, 255, 255, 0.04)"
       });
     }
@@ -1076,7 +1073,7 @@
             volume: volume,
             sl_distance: slDist,
             tp_distance: tpDist,
-            comment: `Manual ${side} Dashboard`
+            comment: `Cent Manual ${side}`
           })
         });
         const data = await res.json();
@@ -1110,6 +1107,17 @@
         const res = await fetch('/api/dashboard/close-all', { method: 'POST' });
         const data = await res.json();
         showToast(data.message || 'Closed all positions', 'success');
+        fetchLiveTelemetry();
+      } catch (e) {
+        showToast(`Error: ${e}`, 'error');
+      }
+    }
+
+    async function resetCooldowns() {
+      try {
+        const res = await fetch('/api/dashboard/reset-cooldowns', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Reset cooldowns successfully!', 'success');
         fetchLiveTelemetry();
       } catch (e) {
         showToast(`Error: ${e}`, 'error');
@@ -1175,7 +1183,7 @@
       floatEl.style.color = totalFloating >= 0 ? 'var(--pass-green)' : 'var(--fail-red)';
 
       const marginPct = (data.account.equity > 0) ? ((data.account.margin / data.account.equity) * 100.0).toFixed(1) : 0.0;
-      document.getElementById('val-margin-util').innerText = `Margin Util: ${marginPct}%`;
+      document.getElementById('val-margin-util').innerText = `Margin: ${marginPct}%`;
     }
 
     // Render Redesigned High-Density Decision Pipeline Grid
@@ -1298,7 +1306,7 @@
                     <div><span style="color: var(--text-dim);">Take Profit 2:</span> <strong style="color: #c084fc; font-family: 'JetBrains Mono', monospace;">${item.tp_2}</strong></div>
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px; border-top: 1px solid var(--border-light); padding-top: 6px;">
-                    <strong>Cent Pyramiding:</strong> At TP1 (+120 pips), 50% volume liquidates and Stop Loss ratchets to Breakeven floor.
+                    <strong>Cent Pyramiding:</strong> Fast Breakeven at +$0.40. At TP1 (+120 pts), 50% volume harvests and SL steps to Breakeven floor.
                   </div>
                 </div>
 
@@ -1312,7 +1320,7 @@
                     <span style="color: var(--text-dim);">Arbiter Outcome:</span> <span class="chip ${statusChip}">${item.status}</span>
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
-                    Evaluated under Shared Margin Guard (<= 20%), Macro News Blackout, and Setup Invalidation Debounce rules.
+                    Evaluated under Shared Margin Guard (<= 20%), Macro Spread Blackout, and Setup Invalidation Debounce rules.
                   </div>
                   <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); margin-top: 6px;">
                     Timestamp: ${item.placed_timestamp}
@@ -1392,9 +1400,9 @@
       const macro = wf.macro_director;
       const mChip = document.getElementById('macro-regime-chip');
       mChip.innerText = macro.regime;
-      document.getElementById('macro-yield').innerText = `${macro.yield_10y}%`;
-      document.getElementById('macro-dxy').innerText = macro.dxy;
-      document.getElementById('macro-permissions').innerText = `Long: ${macro.allow_long ? 'Allowed' : 'Blocked'} | Short: Allowed`;
+      document.getElementById('macro-yield').innerText = "100% Local SMC";
+      document.getElementById('macro-dxy').innerText = macro.dxy || "NEUTRAL";
+      document.getElementById('macro-permissions').innerText = `Long: ${macro.allow_long ? 'Allowed' : 'Vetoed'} | Short: Allowed`;
 
       document.getElementById('swing-anti-count').innerText = `${wf.swing_trader.anti_patterns_loaded} Loaded`;
       document.getElementById('scalp-session-text').innerText = wf.scalp_trader.session_window_text;
@@ -1428,7 +1436,7 @@
         if (t.status === 'FAIL' || t.why_it_went_wrong) {
           pmHtml = `
             <div style="background: rgba(244, 63, 94, 0.08); border-left: 3px solid #f43f5e; padding: 6px 10px; border-radius: 4px; font-size: 11px;">
-              <strong style="color: #fb7185;">AI Post-Mortem:</strong> ${t.why_it_went_wrong || 'Structural invalidation.'}
+              <strong style="color: #fb7185;">Local Quant Post-Mortem:</strong> ${t.why_it_went_wrong || 'Structural invalidation.'}
               ${t.lessons_learned ? `<div style="color: #cbd5e1; margin-top: 2px;">💡 ${t.lessons_learned}</div>` : ''}
             </div>
           `;
